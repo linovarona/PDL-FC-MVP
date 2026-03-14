@@ -1,0 +1,31 @@
+# .NET
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# SQLite
+*.db
+*.db-journal
+
+# Logs
+Logs/
+*.log
+
+# User-specific files
+*.user
+*.suo
+.vs/
+
+# Exportaciones
+Exportaciones/
+
+# Plantillas generadas
+Plantillas/
+
+# Coverage
+coverage/
+*.cobertura.xml
+/NuGetLocal/packages
+/publish
