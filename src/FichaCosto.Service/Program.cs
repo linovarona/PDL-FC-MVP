@@ -1,19 +1,48 @@
+using FichaCosto.Service.Data; // AGREGAR ESTO AL INICIO
 using Serilog;
+
+// Configurar zona horaria por defecto
+AppContext.SetSwitch("System.Globalization.Invariant", false);
+TimeZoneInfo.ClearCachedData();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar Serilog
+
+// Reemplazar la configuración de Serilog por esta:
+
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
     .Enrich.FromLogContext()
-    .WriteTo.Console()
+    .Enrich.WithProperty("ZonaHoraria", TimeZoneInfo.Local.DisplayName) // Opcional
+    .WriteTo.Console(
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+    )
     .WriteTo.File(
         path: Path.Combine(AppContext.BaseDirectory, "Logs", "log-.txt"),
         rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+        // Forzar flush inmediato para debug
+        buffered: false,
+        shared: true
     )
     .CreateLogger();
+
+
+
+
+// Configurar Serilog
+////Log.Logger = new LoggerConfiguration()
+////    .MinimumLevel.Information()
+////    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+////    .Enrich.FromLogContext()
+////    .WriteTo.Console()
+////    .WriteTo.File(
+////        path: Path.Combine(AppContext.BaseDirectory, "Logs", "log-.txt"),
+////        rollingInterval: RollingInterval.Day,
+////        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+////    )
+////    .CreateLogger();
 
 builder.Host.UseSerilog();
 builder.Host.UseWindowsService();
@@ -22,6 +51,9 @@ builder.Host.UseWindowsService();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Database Initializer
+builder.Services.AddSingleton<DatabaseInitializer>(); // <-- AGREGADO
 
 // CORS para Excel client
 builder.Services.AddCors(options =>
@@ -51,8 +83,16 @@ app.MapControllers();
 var paths = new[] { "Data", "Logs", "Exportaciones", "Plantillas" };
 foreach (var path in paths)
 {
-    if (!Directory.Exists(path))
-        Directory.CreateDirectory(path);
+    var fullPath = Path.Combine(AppContext.BaseDirectory, path);
+    if (!Directory.Exists(fullPath))
+        Directory.CreateDirectory(fullPath);
+}
+
+// Inicializar base de datos <-- AGREGADO
+using (var scope = app.Services.CreateScope())
+{
+    var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
+    await initializer.InitializeAsync();
 }
 
 app.Run();
