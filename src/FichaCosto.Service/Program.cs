@@ -1,3 +1,5 @@
+using FichaCosto.Repositories.Implementations;
+using FichaCosto.Repositories.Interfaces;
 using FichaCosto.Service.Data; // AGREGAR ESTO AL INICIO
 using Serilog;
 
@@ -28,22 +30,6 @@ Log.Logger = new LoggerConfiguration()
     )
     .CreateLogger();
 
-
-
-
-// Configurar Serilog
-////Log.Logger = new LoggerConfiguration()
-////    .MinimumLevel.Information()
-////    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
-////    .Enrich.FromLogContext()
-////    .WriteTo.Console()
-////    .WriteTo.File(
-////        path: Path.Combine(AppContext.BaseDirectory, "Logs", "log-.txt"),
-////        rollingInterval: RollingInterval.Day,
-////        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
-////    )
-////    .CreateLogger();
-
 builder.Host.UseSerilog();
 builder.Host.UseWindowsService();
 
@@ -51,6 +37,10 @@ builder.Host.UseWindowsService();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IFichaRepository, FichaRepository>();
 
 // Database Initializer
 builder.Services.AddSingleton<DatabaseInitializer>(); // <-- AGREGADO
