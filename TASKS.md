@@ -1,6 +1,6 @@
 ## 📄 TASKS.md (Actualizado - Roadmap MVP)
 
-```markdown
+
 # Plan de Desarrollo - Ficha de Costo MVP
 
 ## Sistema offline para automatización de fichas de costo según Resolución 148/2023 y 209/2024
@@ -31,25 +31,25 @@
 **Tareas:**
 
 ### 2.1 Enums
-- [ ] `TipoCosto` (MateriaPrima, ManoObra)
-- [ ] `UnidadMedida` (Kg, Unidad, Litro, etc.)
+- [x] `TipoCosto` (MateriaPrima, ManoObra)
+- [x] `UnidadMedida` (Kg, Unidad, Litro, etc.)
 
 ### 2.2 Entities (MVP - Simplificado)
-- [ ] `Cliente` (Id, Nombre, CUIT, Activo)
-- [ ] `Producto` (Id, ClienteId, Codigo, Nombre, UnidadMedida)
-- [ ] `MateriaPrima` (Id, ProductoId, Nombre, Cantidad, CostoUnitario)
-- [ ] `ManoObraDirecta` (Id, ProductoId, Horas, SalarioHora)
-- [ ] `FichaCosto` (Id, ProductoId, Fecha, CostosDirectos, MargenUtilidad, Valida)
+- [x] `Cliente` (Id, Nombre, CUIT, Activo)
+- [x] `Producto` (Id, ClienteId, Codigo, Nombre, UnidadMedida)
+- [x] `MateriaPrima` (Id, ProductoId, Nombre, Cantidad, CostoUnitario)
+- [x] `ManoObraDirecta` (Id, ProductoId, Horas, SalarioHora)
+- [x] `FichaCosto` (Id, ProductoId, Fecha, CostosDirectos, MargenUtilidad, Valida)
 
 ### 2.3 DTOs MVP
-- [ ] `FichaCostoDto` (entrada cálculo)
-- [ ] `ResultadoCalculoDto` (salida cálculo)
-- [ ] `ResultadoValidacionDto` (validación 30%)
+- [x] `FichaCostoDto` (entrada cálculo)
+- [x] `ResultadoCalculoDto` (salida cálculo)
+- [x] `ResultadoValidacionDto` (validación 30%)
 
 ### 2.4 Base de datos
-- [ ] `FichaCostoContext` (SQLite + Dapper)
-- [ ] `Schema.sql` (tablas simplificadas MVP)
-- [ ] `DatabaseInitializer`
+- [x] `FichaCostoContext` (SQLite + Dapper)
+- [x] `Schema.sql` (tablas simplificadas MVP)
+- [x] `DatabaseInitializer`
 
 **Criterios de aceptación:**
 - Compilación exitosa
