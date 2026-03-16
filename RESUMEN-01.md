@@ -146,9 +146,9 @@ Una vez resuelto NuGet, instalar en este orden:
 2. `Microsoft.AspNetCore.Mvc.Testing` (8.0.2)
 
 ### Prioridad 3: Verificar Build
-- [ ] Compilar solución sin errores (`Ctrl+Shift+B`)
-- [ ] Verificar que `FichaCosto.Service.dll` se genera
-- [ ] Ejecutar con `F5` y verificar Swagger en `http://localhost:5000/swagger`
+- [x] Compilar solución sin errores (`Ctrl+Shift+B`)
+- [x] Verificar que `FichaCosto.Service.dll` se genera
+- [x] Ejecutar con `F5` y verificar Swagger en `http://localhost:5000/swagger`
 
 ---
 
@@ -246,11 +246,11 @@ start http://localhost:5000/swagger
 
 Antes de comenzar Fase 2 (Modelos de Datos), verificar:
 
-- [ ] `dotnet restore` funciona sin errores (offline)
-- [ ] `dotnet build` genera 0 errores, 0 advertencias críticas
-- [ ] `F5` en VS 2022 inicia el servicio y muestra Swagger
-- [ ] Todos los paquetes NuGet están en `NuGetLocal\packages`
-- [ ] `nuget.config` permite restaurar sin internet
+- [x] `dotnet restore` funciona sin errores (offline)
+- [x] `dotnet build` genera 0 errores, 0 advertencias críticas
+- [x] `F5` en VS 2022 inicia el servicio y muestra Swagger
+- [x] Todos los paquetes NuGet están en `NuGetLocal\packages`
+- [x] `nuget.config` permite restaurar sin internet
 
 **Si todos los checks pasan → Proceder a Fase 2**
 

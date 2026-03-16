@@ -189,10 +189,10 @@ sqlite3 Data\fichacosto.db "SELECT * FROM vw_ProductosUltimoCosto;"
 
 | Riesgo | Mitigación Aplicada |
 |--------|---------------------|
-| Conflicto nombres `FichaCosto` | Alias `using FichaCostoEntity` en tests |
-| Enum sin valor 0 | Agregado `NoDefinido = 0` + inicialización explícita |
-| Zona horaria logs | Configuración Serilog con timestamps claros |
-| Puerto dinámico VS 2022 | Documentación explícita de URLs funcionales |
+| Conflicto nombres `FichaCosto` 	| Alias `using FichaCostoEntity` en tests |
+| Enum sin valor 0 					| Agregado `NoDefinido = 0` + inicialización explícita |
+| Zona horaria logs 				| Configuración Serilog con timestamps claros |
+| Puerto dinámico VS 2022 			| Documentación explícita de URLs funcionales |
 
 ---
 
@@ -222,12 +222,12 @@ sqlite3 bin\Release\net9.0\Data\fichacosto.db ".tables"
 
 Antes de comenzar Fase 3 (Repositorios), verificar:
 
-- [ ] `dotnet build` genera 0 errores, 0 advertencias críticas
-- [ ] `dotnet test` pasa 7/7 tests
-- [ ] Servicio corre y Swagger accesible en `http://localhost:5001/swagger`
-- [ ] Base de datos `fichacosto.db` creada con 5 tablas + seed data
-- [ ] Logs funcionan correctamente en `Logs/log-YYYYMMdd.txt`
-- [ ] Entidades tienen valores por defecto correctos (`EstadoValidacion.Valido`)
+- [x] `dotnet build` genera 0 errores, 0 advertencias críticas
+- [x] `dotnet test` pasa 7/7 tests
+- [x] Servicio corre y Swagger accesible en `http://localhost:5001/swagger`
+- [x] Base de datos `fichacosto.db` creada con 5 tablas + seed data
+- [x] Logs funcionan correctamente en `Logs/log-YYYYMMdd.txt`
+- [x] Entidades tienen valores por defecto correctos (`EstadoValidacion.Valido`)
 
 **Si todos los checks pasan → Proceder a Fase 3**
 
@@ -248,6 +248,4 @@ Antes de comenzar Fase 3 (Repositorios), verificar:
 
 *Documento generado para continuidad del desarrollo. Próximo entregable: Fase 3 - Repositorios con Dapper*
 
----
 
-**¿Confirmas que procedemos a Fase 3 o necesitas ajustes en algún punto de Fase 2?**
