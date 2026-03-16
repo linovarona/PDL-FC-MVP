@@ -63,11 +63,11 @@
 **Objetivo:** Acceso a datos con Dapper (solo operaciones MVP).
 
 **Tareas:**
-- [ ] `IClienteRepository` (CRUD básico)
-- [ ] `IProductoRepository` (CRUD + listar por cliente)
-- [ ] `IFichaRepository` (crear + obtener historial)
-- [ ] Implementaciones con Dapper
-- [ ] Mapeos DTO-Entity básicos
+- [x] `IClienteRepository` (CRUD básico)
+- [x] `IProductoRepository` (CRUD + listar por cliente)
+- [x] `IFichaRepository` (crear + obtener historial)
+- [x] Implementaciones con Dapper
+- [x] Mapeos DTO-Entity básicos
 
 **Nota:** Sin repositorios de CostosIndirectos/GastosGenerales para MVP (se harán en v1.1)
 

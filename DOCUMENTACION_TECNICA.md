@@ -2307,7 +2307,6 @@ if ($service.Status -ne "Running") {
 }
 ```
 
-<<<<<<< HEAD
 #### 15.5 Estrategia de Versionado con Git Tags
 
 El proyecto utiliza **Git Tags** para marcar versiones estables y puntos de referencia del desarrollo. 

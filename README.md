@@ -37,7 +37,7 @@ msiexec /i FichaCostoService-Setup-v1.0.0.msi /quiet
 
 ```powershell
 # Clonar repositorio
-git clone https://github.com/linovarona/PDL-FC.git
+git clone https://github.com/linovarona/PDL-FC-MVP
 cd PDL-FC
 
 # Publicar
