@@ -81,4 +81,20 @@ public class FichaCosto
     /// </summary>
     [StringLength(20)]
     public string? VersionCalculo { get; set; } = "1.0.0-MVP";
+
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal CostoTotal { get; set; }
+
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal PrecioVentaSugerido { get; set; }
+
+    [StringLength(500)]
+    public string? Observaciones { get; set; }
+
+    [StringLength(50)] 
+    public string? CalculadoPor { get; set; }
+
+    
+    
+
 }

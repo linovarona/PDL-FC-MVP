@@ -1,29 +1,25 @@
 using Dapper;
 using FichaCosto.Repositories.Interfaces;
 using FichaCosto.Service.Models.Entities;
-using Microsoft.Data.Sqlite;
 using System.Data;
 
 namespace FichaCosto.Repositories.Implementations
 {
     public class ProductoRepository : IProductoRepository
     {
-        private readonly string _connectionString;
+        private readonly IConnectionFactory _connectionFactory;
         private readonly ILogger<ProductoRepository> _logger;
 
-        public ProductoRepository(IConfiguration configuration, ILogger<ProductoRepository> logger)
+        public ProductoRepository(IConnectionFactory connectionFactory, ILogger<ProductoRepository> logger)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+            _connectionFactory = connectionFactory;
             _logger = logger;
         }
-
-        private IDbConnection CreateConnection() => new SqliteConnection(_connectionString);
 
         public async Task<Producto?> GetByIdAsync(int id)
         {
             const string sql = "SELECT * FROM Productos WHERE Id = @Id";
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryFirstOrDefaultAsync<Producto>(sql, new { Id = id });
         }
 
@@ -33,7 +29,7 @@ namespace FichaCosto.Repositories.Implementations
             const string sqlMateriasPrimas = "SELECT * FROM MateriasPrimas WHERE ProductoId = @Id";
             const string sqlManoObra = "SELECT * FROM ManoObraDirecta WHERE ProductoId = @Id";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
 
             var producto = await connection.QueryFirstOrDefaultAsync<Producto>(sqlProducto, new { Id = id });
             if (producto == null) return null;
@@ -50,14 +46,14 @@ namespace FichaCosto.Repositories.Implementations
         public async Task<IEnumerable<Producto>> GetByClienteIdAsync(int clienteId)
         {
             const string sql = "SELECT * FROM Productos WHERE ClienteId = @ClienteId ORDER BY Nombre";
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryAsync<Producto>(sql, new { ClienteId = clienteId });
         }
 
         public async Task<IEnumerable<Producto>> GetAllAsync()
         {
             const string sql = "SELECT * FROM Productos ORDER BY Nombre";
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryAsync<Producto>(sql);
         }
 
@@ -68,7 +64,7 @@ namespace FichaCosto.Repositories.Implementations
                 VALUES (@ClienteId, @Codigo, @Nombre, @Descripcion, @UnidadMedida, @Activo, @FechaCreacion);
                 SELECT last_insert_rowid();";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             var id = await connection.ExecuteScalarAsync<int>(sql, producto);
             _logger.LogInformation("Producto creado con ID: {Id}", id);
             return id;
@@ -82,7 +78,7 @@ namespace FichaCosto.Repositories.Implementations
                     Descripcion = @Descripcion, UnidadMedida = @UnidadMedida, Activo = @Activo
                 WHERE Id = @Id";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(sql, producto);
             return rowsAffected > 0;
         }
@@ -90,7 +86,7 @@ namespace FichaCosto.Repositories.Implementations
         public async Task<bool> DeleteAsync(int id)
         {
             const string sql = "DELETE FROM Productos WHERE Id = @Id";
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(sql, new { Id = id });
             return rowsAffected > 0;
         }
@@ -101,7 +97,7 @@ namespace FichaCosto.Repositories.Implementations
             if (excludeId.HasValue)
                 sql += " AND Id != @ExcludeId";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             var count = await connection.ExecuteScalarAsync<int>(sql, new { Codigo = codigo, ExcludeId = excludeId });
             return count > 0;
         }

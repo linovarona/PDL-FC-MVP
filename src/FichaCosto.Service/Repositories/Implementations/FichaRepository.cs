@@ -1,32 +1,26 @@
 using Dapper;
-//using FichaCosto.Service.Models.Entities;
 using FichaCosto.Repositories.Interfaces;
-using Microsoft.Data.Sqlite;
-using System.Data;
-
-// Alias para resolver conflicto de nombres: namespace vs clase FichaCosto
 using FichaCostoEntity = FichaCosto.Service.Models.Entities.FichaCosto;
+
+using System.Data;
 
 namespace FichaCosto.Repositories.Implementations
 {
     public class FichaRepository : IFichaRepository
     {
-        private readonly string _connectionString;
+        private readonly IConnectionFactory _connectionFactory;
         private readonly ILogger<FichaRepository> _logger;
 
-        public FichaRepository(IConfiguration configuration, ILogger<FichaRepository> logger)
+        public FichaRepository(IConnectionFactory connectionFactory, ILogger<FichaRepository> logger)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+            _connectionFactory = connectionFactory;
             _logger = logger;
         }
-
-        private IDbConnection CreateConnection() => new SqliteConnection(_connectionString);
 
         public async Task<FichaCostoEntity?> GetByIdAsync(int id)
         {
             const string sql = "SELECT * FROM FichasCosto WHERE Id = @Id";
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryFirstOrDefaultAsync<FichaCostoEntity>(sql, new { Id = id });
         }
 
@@ -37,7 +31,7 @@ namespace FichaCosto.Repositories.Implementations
                 WHERE ProductoId = @ProductoId 
                 ORDER BY FechaCalculo DESC";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryAsync<FichaCostoEntity>(sql, new { ProductoId = productoId });
         }
 
@@ -49,34 +43,35 @@ namespace FichaCosto.Repositories.Implementations
                 ORDER BY FechaCalculo DESC 
                 LIMIT @Limit";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryAsync<FichaCostoEntity>(sql, new { ProductoId = productoId, Limit = limit });
         }
 
         public async Task<int> CreateAsync(FichaCostoEntity ficha)
         {
+            // NOTA: Sin CostosIndirectos y GastosGenerales (post-MVP)
             const string sql = @"
                 INSERT INTO FichasCosto (
                     ProductoId, FechaCalculo, CostoMateriasPrimas, CostoManoObra, 
-                    CostosIndirectos, GastosGenerales, CostoTotal, MargenUtilidad, 
-                    PrecioVentaSugerido, EstadoValidacion, Observaciones, CalculadoPor
+                    CostoTotal, MargenUtilidad, PrecioVentaSugerido, 
+                    EstadoValidacion, Observaciones, CalculadoPor, CostosDirectosTotales, PrecioVentaCalculado
                 ) VALUES (
                     @ProductoId, @FechaCalculo, @CostoMateriasPrimas, @CostoManoObra, 
-                    @CostosIndirectos, @GastosGenerales, @CostoTotal, @MargenUtilidad, 
-                    @PrecioVentaSugerido, @EstadoValidacion, @Observaciones, @CalculadoPor
+                    @CostoTotal, @MargenUtilidad, @PrecioVentaSugerido, 
+                    @EstadoValidacion, @Observaciones, @CalculadoPor, @CostosDirectosTotales, @PrecioVentaCalculado
                 );
                 SELECT last_insert_rowid();";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             var id = await connection.ExecuteScalarAsync<int>(sql, ficha);
-            _logger.LogInformation("Ficha de costo creada con ID: {Id} para Producto: {ProductoId}", id, ficha.ProductoId);
+            _logger.LogInformation("Ficha creada con ID: {Id}", id);
             return id;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
             const string sql = "DELETE FROM FichasCosto WHERE Id = @Id";
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             var rowsAffected = await connection.ExecuteAsync(sql, new { Id = id });
             return rowsAffected > 0;
         }
@@ -89,7 +84,7 @@ namespace FichaCosto.Repositories.Implementations
                 ORDER BY FechaCalculo DESC 
                 LIMIT 1";
 
-            using var connection = CreateConnection();
+            using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryFirstOrDefaultAsync<FichaCostoEntity>(sql, new { ProductoId = productoId });
         }
     }

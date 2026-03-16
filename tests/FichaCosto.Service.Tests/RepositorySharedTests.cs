@@ -3,45 +3,28 @@ using FichaCosto.Repositories.Implementations;
 using FichaCosto.Repositories.Interfaces;
 using FichaCosto.Service.Models.Entities;
 using FichaCosto.Service.Models.Enums;
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
 using FichaCostoEntity = FichaCosto.Service.Models.Entities.FichaCosto;
-using System;
-using System.Collections.Generic;
+using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace FichaCosto.Service.Tests
 {
     /// <summary>
-    /// Tests de repositorios usando SQLite Shared Cache.
-    /// 
-    /// PROBLEMA QUE RESUELVE:
-    /// SQLite en memoria (:memory:) crea una BD NUEVA por cada conexión.
-    /// Si el Repository cierra la conexión con 'using', la BD desaparece.
-    /// 
-    /// SOLUCIÓN - Shared Cache:
-    /// "Data Source=:memory:;Cache=Shared" permite que múltiples conexiones 
-    /// compartan la misma BD en memoria, SIEMPRE que haya al menos UNA 
-    /// conexión abierta manteniéndola viva.
+    /// Tests de integración con conexión SQLite compartida mediante IConnectionFactory.
     /// 
     /// ARQUITECTURA:
-    /// 1. Test crea conexión "Keeper" que se mantiene abierta durante todo el test
-    /// 2. Repository crea sus propias conexiones (con mismo connection string)
-    /// 3. Al finalizar, Dispose() cierra la Keeper y la BD se destruye
+    /// - Una sola SqliteConnection abierta durante todo el test
+    /// - TestConnectionFactory envuelve la conexión en NonDisposableConnection
+    /// - Repositories reciben IConnectionFactory (no IConfiguration)
+    /// - NonDisposableConnection ignora Dispose() para mantener BD viva
     /// </summary>
     public class RepositorySharedTests : IDisposable
     {
-        private readonly string _connectionString;
-        private readonly SqliteConnection _connectionKeeper;
         private readonly ITestOutputHelper _output;
-
-        // Repositorios bajo prueba
+        private readonly SqliteConnection _sharedConnection;
         private readonly IClienteRepository _clienteRepo;
         private readonly IProductoRepository _productoRepo;
         private readonly IFichaRepository _fichaRepo;
@@ -50,53 +33,43 @@ namespace FichaCosto.Service.Tests
         {
             _output = output;
 
-            // =================================================================
-            // CONFIGURACIÓN CRÍTICA: Shared Cache
-            // =================================================================
-            // Sin Cache=Shared: Cada conexión nueva = BD vacía nueva
-            // Con Cache=Shared: Todas las conexiones ven la misma BD
-            _connectionString = "Data Source=:memory:;Cache=Shared";
+            _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] === INICIO TEST ===");
+            _output.WriteLine($"Thread ID: {Environment.CurrentManagedThreadId}");
 
-            _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Iniciando test con Shared Cache");
-            _output.WriteLine($"ConnectionString: {_connectionString}");
+            // ============================================================
+            // PASO 1: Crear y abrir conexión SQLite en memoria
+            // ============================================================
+            var connectionString = "Data Source=:memory:";
 
-            // =================================================================
-            // PASO 1: Crear "Keeper" - La conexión que mantiene viva la BD
-            // =================================================================
-            // Si cerramos esta conexión, la BD en memoria se destruye
-            // aunque haya otras conexiones abiertas
-            _connectionKeeper = new SqliteConnection(_connectionString);
-            _connectionKeeper.Open();
+            _sharedConnection = new SqliteConnection(connectionString);
+            _sharedConnection.Open();
 
-            _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Keeper abierta. ID: {_connectionKeeper.GetHashCode()}");
+            _output.WriteLine($"Conexión abierta. State: {_sharedConnection.State}, Hash: {_sharedConnection.GetHashCode()}");
 
-            // =================================================================
-            // PASO 2: Ejecutar Schema SQL en la conexión Keeper
-            // =================================================================
-            // Esto crea las tablas en la BD compartida
+            // ============================================================
+            // PASO 2: Crear schema en la conexión compartida
+            // ============================================================
             EjecutarSchema();
 
-            // =================================================================
-            // PASO 3: Verificar que las tablas existen
-            // =================================================================
+            // ============================================================
+            // PASO 3: Verificar tablas existen
+            // ============================================================
             VerificarTablas();
 
-            // =================================================================
-            // PASO 4: Crear repositorios
-            // =================================================================
-            // Usan el MISMO connection string, pero crearán sus propias conexiones
-            var config = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:DefaultConnection"] = _connectionString
-                })
-                .Build();
+            // ============================================================
+            // PASO 4: Crear IConnectionFactory con NonDisposableConnection
+            // ============================================================
+            IConnectionFactory factory = new TestConnectionFactory(_sharedConnection);
+            _output.WriteLine($"Factory creada. Tipo: {factory.GetType().Name}");
 
-            _clienteRepo = new ClienteRepository(config, NullLogger<ClienteRepository>.Instance);
-            _productoRepo = new ProductoRepository(config, NullLogger<ProductoRepository>.Instance);
-            _fichaRepo = new FichaRepository(config, NullLogger<FichaRepository>.Instance);
+            // ============================================================
+            // PASO 5: Crear repositorios con IConnectionFactory (NO IConfiguration)
+            // ============================================================
+            _clienteRepo = new ClienteRepository(factory, NullLogger<ClienteRepository>.Instance);
+            _productoRepo = new ProductoRepository(factory, NullLogger<ProductoRepository>.Instance);
+            _fichaRepo = new FichaRepository(factory, NullLogger<FichaRepository>.Instance);
 
-            _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Repositorios creados");
+            _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Repositorios listos");
         }
 
         #region Setup Privado
@@ -104,77 +77,59 @@ namespace FichaCosto.Service.Tests
         private void EjecutarSchema()
         {
             var schemaPath = BuscarSchemaSql();
-            _output.WriteLine($"Schema encontrado: {schemaPath}");
-
             var schemaSql = File.ReadAllText(schemaPath);
 
-            // Dividir en comandos individuales (SQLite no soporta múltiples statements bien)
-            var comandos = schemaSql
-                .Split(';', StringSplitOptions.RemoveEmptyEntries)
-                .Select(cmd => cmd.Trim())
-                .Where(cmd => !string.IsNullOrWhiteSpace(cmd) && !cmd.StartsWith("--"))
-                .ToList();
+            // Ejecutar todo el schema en la conexión compartida
+            using var cmd = new SqliteCommand(schemaSql, _sharedConnection);
+            cmd.ExecuteNonQuery();
 
-            _output.WriteLine($"Comandos SQL a ejecutar: {comandos.Count}");
-
-            using var transaction = _connectionKeeper.BeginTransaction();
-
-            try
-            {
-                foreach (var comando in comandos)
-                {
-                    using var cmd = new SqliteCommand(comando + ";", _connectionKeeper, transaction);
-                    cmd.ExecuteNonQuery();
-                    _output.WriteLine($"  ✓ Ejecutado: {comando.Substring(0, Math.Min(50, comando.Length))}...");
-                }
-
-                transaction.Commit();
-                _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Schema creado exitosamente");
-            }
-            catch (Exception ex)
-            {
-                transaction.Rollback();
-                _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] ERROR en schema: {ex.Message}");
-                throw;
-            }
+            _output.WriteLine($"Schema ejecutado en conexión {_sharedConnection.GetHashCode()}");
         }
 
         private void VerificarTablas()
         {
             const string sql = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name";
-            using var cmd = new SqliteCommand(sql, _connectionKeeper);
+            using var cmd = new SqliteCommand(sql, _sharedConnection);
             using var reader = cmd.ExecuteReader();
 
-            _output.WriteLine("Tablas creadas:");
+            var tablas = new List<string>();
             while (reader.Read())
             {
-                _output.WriteLine($"  - {reader.GetString(0)}");
+                tablas.Add(reader.GetString(0));
+            }
+
+            _output.WriteLine($"Tablas en BD: {string.Join(", ", tablas)}");
+
+            if (!tablas.Contains("Clientes"))
+            {
+                throw new InvalidOperationException("ERROR CRÍTICO: Tabla Clientes no existe");
             }
         }
 
         private string BuscarSchemaSql()
         {
-            // Múltiples rutas posibles según cómo se ejecute el test
-            var posiblesRutas = new[]
+            var rutas = new[]
             {
-                // Desde bin/Debug/net9.0/
+                // Desde output del test
                 Path.Combine(AppContext.BaseDirectory, "Data", "Schema.sql"),
-                // Desde carpeta de tests
+                // Desde proyecto de tests
                 Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "FichaCosto.Service", "Data", "Schema.sql"),
+                // Desde carpeta de tests
+                Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "Schema.sql"),
                 // Ruta absoluta conocida
                 @"D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Service\Data\Schema.sql"
             };
 
-            foreach (var ruta in posiblesRutas)
+            foreach (var ruta in rutas.Select(Path.GetFullPath))
             {
-                var rutaNormalizada = Path.GetFullPath(ruta);
-                if (File.Exists(rutaNormalizada))
-                    return rutaNormalizada;
+                if (File.Exists(ruta))
+                {
+                    _output.WriteLine($"Schema encontrado: {ruta}");
+                    return ruta;
+                }
             }
 
-            throw new FileNotFoundException(
-                "No se encontró Schema.sql. Buscado en:\n" +
-                string.Join("\n", posiblesRutas.Select(p => Path.GetFullPath(p))));
+            throw new FileNotFoundException("Schema.sql no encontrado en rutas de búsqueda");
         }
 
         #endregion
@@ -184,7 +139,7 @@ namespace FichaCosto.Service.Tests
         [Fact]
         public async Task Cliente_CRUD_Completo()
         {
-            _output.WriteLine("\n=== TEST: Cliente_CRUD_Completo ===");
+            _output.WriteLine($"\n--- TEST: Cliente_CRUD_Completo ---");
 
             // CREATE
             var cliente = new Cliente
@@ -192,68 +147,77 @@ namespace FichaCosto.Service.Tests
                 NombreEmpresa = "Empresa Test S.A.",
                 CUIT = "30111222333",
                 Direccion = "Calle Falsa 123",
+                ContactoNombre = "Juan Pérez",
                 ContactoTelefono = "555-0100",
                 ContactoEmail = "test@empresa.com",
                 Activo = true,
-                FechaAlta = DateTime.Now
+                FechaAlta = DateTime.UtcNow
             };
 
+            _output.WriteLine("Creando cliente...");
             var id = await _clienteRepo.CreateAsync(cliente);
-            _output.WriteLine($"CREATE: Cliente creado con ID {id}");
+            _output.WriteLine($"✓ Creado ID: {id}");
             Assert.True(id > 0);
 
             // READ
-            var clienteLeido = await _clienteRepo.GetByIdAsync(id);
-            _output.WriteLine($"READ: Cliente leído - {clienteLeido?.NombreEmpresa}");
-            Assert.NotNull(clienteLeido);
-            Assert.Equal(cliente.NombreEmpresa, clienteLeido.NombreEmpresa);
-            Assert.Equal(cliente.CUIT, clienteLeido.CUIT);
+            _output.WriteLine($"Leyendo cliente {id}...");
+            var leido = await _clienteRepo.GetByIdAsync(id);
+            Assert.NotNull(leido);
+            Assert.Equal(cliente.NombreEmpresa, leido.NombreEmpresa);
+            Assert.Equal(cliente.CUIT, leido.CUIT);
+            _output.WriteLine($"✓ Leído: {leido.NombreEmpresa}");
 
             // UPDATE
-            clienteLeido.NombreEmpresa = "Empresa Test Modificada S.A.";
-            var actualizado = await _clienteRepo.UpdateAsync(clienteLeido);
-            _output.WriteLine($"UPDATE: Resultado = {actualizado}");
+            leido.NombreEmpresa = "Empresa Modificada S.A.";
+            leido.ContactoEmail = "nuevo@empresa.com";
+            _output.WriteLine("Actualizando cliente...");
+            var actualizado = await _clienteRepo.UpdateAsync(leido);
             Assert.True(actualizado);
 
-            var clienteActualizado = await _clienteRepo.GetByIdAsync(id);
-            Assert.Equal("Empresa Test Modificada S.A.", clienteActualizado?.NombreEmpresa);
+            var actualizadoVerif = await _clienteRepo.GetByIdAsync(id);
+            Assert.Equal("Empresa Modificada S.A.", actualizadoVerif?.NombreEmpresa);
+            _output.WriteLine("✓ Actualizado");
 
             // EXISTS
             var existe = await _clienteRepo.ExistsByCuitAsync(cliente.CUIT);
-            _output.WriteLine($"EXISTS: CUIT {cliente.CUIT} existe = {existe}");
             Assert.True(existe);
+            _output.WriteLine("✓ Exists verificado");
 
             // LIST ALL
             var todos = await _clienteRepo.GetAllAsync();
-            _output.WriteLine($"LIST: Total clientes = {todos.Count()}");
+            Assert.Contains(todos, c => c.Id == id);
+            _output.WriteLine($"✓ Listado: {todos.Count()} clientes");
 
             // DELETE
+            _output.WriteLine("Eliminando cliente...");
             var eliminado = await _clienteRepo.DeleteAsync(id);
-            _output.WriteLine($"DELETE: Resultado = {eliminado}");
             Assert.True(eliminado);
 
-            var clienteEliminado = await _clienteRepo.GetByIdAsync(id);
-            Assert.Null(clienteEliminado);
+            var verificarEliminado = await _clienteRepo.GetByIdAsync(id);
+            Assert.Null(verificarEliminado);
+            _output.WriteLine("✓ Eliminado y verificado");
+
+            _output.WriteLine("--- TEST COMPLETADO ---");
         }
 
         [Fact]
-        public async Task Cliente_ExistsByCuit_DistingueEntreExistenteYNuevo()
+        public async Task Cliente_ExistsByCuit_DistingueExistenteYNuevo()
         {
-            _output.WriteLine("\n=== TEST: ExistsByCuit ===");
+            _output.WriteLine($"\n--- TEST: ExistsByCuit ---");
 
-            // Arrange
             var cliente = new Cliente
             {
                 NombreEmpresa = "CUIT Test",
                 CUIT = "30999888777",
                 Activo = true,
-                FechaAlta = DateTime.Now
+                FechaAlta = DateTime.UtcNow
             };
             await _clienteRepo.CreateAsync(cliente);
 
-            // Act & Assert
             Assert.True(await _clienteRepo.ExistsByCuitAsync("30999888777"));
             Assert.False(await _clienteRepo.ExistsByCuitAsync("30111111111"));
+
+            _output.WriteLine("✓ Exists distingue correctamente");
         }
 
         #endregion
@@ -263,64 +227,62 @@ namespace FichaCosto.Service.Tests
         [Fact]
         public async Task Producto_ConClienteYDetalles()
         {
-            _output.WriteLine("\n=== TEST: Producto_ConClienteYDetalles ===");
+            _output.WriteLine($"\n--- TEST: Producto_ConClienteYDetalles ---");
 
-            // Crear cliente primero
-            var cliente = new Cliente
+            // Setup: Cliente
+            var clienteId = await _clienteRepo.CreateAsync(new Cliente
             {
                 NombreEmpresa = "Cliente Producto",
                 CUIT = "30777666555",
                 Activo = true,
-                FechaAlta = DateTime.Now
-            };
-            var clienteId = await _clienteRepo.CreateAsync(cliente);
+                FechaAlta = DateTime.UtcNow
+            });
             _output.WriteLine($"Cliente creado: {clienteId}");
 
-            // Crear producto
+            // Producto
             var producto = new Producto
             {
                 ClienteId = clienteId,
-                Codigo = "PROD-TEST-001",
-                Nombre = "Producto de Prueba",
-                Descripcion = "Descripción del producto",
+                Codigo = "PROD-001",
+                Nombre = "Producto Test",
+                Descripcion = "Descripción de prueba",
                 UnidadMedida = UnidadMedida.Unidad,
                 Activo = true,
-                FechaCreacion = DateTime.Now
+                FechaCreacion = DateTime.UtcNow
             };
 
             var productoId = await _productoRepo.CreateAsync(producto);
             _output.WriteLine($"Producto creado: {productoId}");
 
-            // Leer con detalles (debería tener listas vacías, no null)
-            var productoLeido = await _productoRepo.GetByIdWithDetailsAsync(productoId);
-            _output.WriteLine($"Producto leído: {productoLeido?.Nombre}");
+            // Leer con detalles
+            var conDetalles = await _productoRepo.GetByIdWithDetailsAsync(productoId);
 
-            Assert.NotNull(productoLeido);
-            Assert.NotNull(productoLeido.MateriasPrimas);
-            Assert.NotNull(productoLeido.ManoObras);
-            _output.WriteLine($"MateriasPrimas: {productoLeido.MateriasPrimas.Count} items");
-            _output.WriteLine($"ManoObras: {productoLeido.ManoObras.Count} items");
+            Assert.NotNull(conDetalles);
+            Assert.NotNull(conDetalles.MateriasPrimas);
+            Assert.NotNull(conDetalles.ManoObras);
+            Assert.Equal(clienteId, conDetalles.ClienteId);
+
+            _output.WriteLine($"✓ Detalles: MP={conDetalles.MateriasPrimas.Count}, MO={conDetalles.ManoObras.Count}");
 
             // Listar por cliente
             var productosDelCliente = await _productoRepo.GetByClienteIdAsync(clienteId);
             Assert.Single(productosDelCliente);
+            _output.WriteLine("✓ Listado por cliente correcto");
         }
 
         [Fact]
         public async Task Producto_ExistsByCodigo_ValidaUnicidad()
         {
-            _output.WriteLine("\n=== TEST: ExistsByCodigo ===");
+            _output.WriteLine($"\n--- TEST: ExistsByCodigo ---");
 
-            // Crear cliente
             var clienteId = await _clienteRepo.CreateAsync(new Cliente
             {
                 NombreEmpresa = "Cliente Codigo",
                 CUIT = "30555444333",
                 Activo = true,
-                FechaAlta = DateTime.Now
+                FechaAlta = DateTime.UtcNow
             });
 
-            // Crear producto
             await _productoRepo.CreateAsync(new Producto
             {
                 ClienteId = clienteId,
@@ -328,79 +290,152 @@ namespace FichaCosto.Service.Tests
                 Nombre = "Producto Unico",
                 UnidadMedida = UnidadMedida.Unidad,
                 Activo = true,
-                FechaCreacion = DateTime.Now
+                FechaCreacion = DateTime.UtcNow
             });
 
-            // Verificar existencia
             Assert.True(await _productoRepo.ExistsByCodigoAsync("UNICO-001"));
             Assert.False(await _productoRepo.ExistsByCodigoAsync("NO-EXISTE"));
+
+            // Verificar excludeId
+            var producto2 = await _productoRepo.GetByIdAsync(1);
+            if (producto2 != null)
+            {
+                Assert.False(await _productoRepo.ExistsByCodigoAsync("UNICO-001", excludeId: producto2.Id));
+            }
+
+            _output.WriteLine("✓ ExistsByCodigo funciona correctamente");
         }
 
         #endregion
 
-        #region Tests de FichaRepository
+        #region Tests de FichaRepository (MVP - Sin campos no habilitados)
 
         [Fact]
-        public async Task Ficha_HistorialCompleto()
+        public async Task Ficha_CRUD_SinCamposNoHabilitados()
         {
-            _output.WriteLine("\n=== TEST: Ficha_HistorialCompleto ===");
+            _output.WriteLine($"\n--- TEST: Ficha_CRUD_SinCamposNoHabilitados ---");
 
-            // Setup: Crear cliente y producto
+            // Setup
             var clienteId = await _clienteRepo.CreateAsync(new Cliente
             {
                 NombreEmpresa = "Cliente Ficha",
                 CUIT = "30222111444",
                 Activo = true,
-                FechaAlta = DateTime.Now
+                FechaAlta = DateTime.UtcNow
             });
 
             var productoId = await _productoRepo.CreateAsync(new Producto
             {
                 ClienteId = clienteId,
-                Codigo = "PROD-HIST",
+                Codigo = "PROD-FICHA",
+                Nombre = "Producto Con Ficha",
+                UnidadMedida = UnidadMedida.Unidad,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow
+            });
+            _output.WriteLine($"Setup: Cliente {clienteId}, Producto {productoId}");
+
+            // Ficha SIN CostosIndirectos y GastosGenerales (post-MVP)
+            var ficha = new FichaCostoEntity
+            {
+                ProductoId = productoId,
+                FechaCalculo = DateTime.UtcNow,
+                CostoMateriasPrimas = 100.50m,
+                CostoManoObra = 50.25m,
+                // NO incluir: CostosIndirectos, GastosGenerales
+                //ToDo:CostoTotal = 150.75m,
+                MargenUtilidad = 30.0m,
+                //ToDo: PrecioVentaSugerido = 195.98m,
+                EstadoValidacion = EstadoValidacion.Valido,
+                //ToDo: = "Ficha de prueba MVP",
+                //ToDo:CalculadoPor = "TestUser"
+            };
+
+            var id = await _fichaRepo.CreateAsync(ficha);
+            _output.WriteLine($"Ficha creada: ID {id}");
+            Assert.True(id > 0);
+
+            // READ
+            var leida = await _fichaRepo.GetByIdAsync(id);
+            Assert.NotNull(leida);
+            //ToDo:Assert.Equal(ficha.CostoTotal, leida.CostoTotal);
+            Assert.Equal(ficha.MargenUtilidad, leida.MargenUtilidad);
+            //ToDo:_output.WriteLine($"✓ Leída: CostoTotal=${leida.CostoTotal}");
+
+            // Historial
+            var historial = await _fichaRepo.GetHistorialByProductoIdAsync(productoId, 10);
+            Assert.Single(historial);
+            _output.WriteLine($"✓ Historial: {historial.Count()} fichas");
+
+            // Última ficha
+            var ultima = await _fichaRepo.GetUltimaFichaByProductoIdAsync(productoId);
+            Assert.NotNull(ultima);
+            Assert.Equal(id, ultima.Id);
+            _output.WriteLine($"✓ Última ficha recuperada correctamente");
+
+            // DELETE
+            var eliminada = await _fichaRepo.DeleteAsync(id);
+            Assert.True(eliminada);
+            Assert.Null(await _fichaRepo.GetByIdAsync(id));
+            _output.WriteLine("✓ Eliminada correctamente");
+        }
+
+        [Fact]
+        public async Task Ficha_HistorialMultiple()
+        {
+            _output.WriteLine($"\n--- TEST: Ficha_HistorialMultiple ---");
+
+            // Setup
+            var clienteId = await _clienteRepo.CreateAsync(new Cliente
+            {
+                NombreEmpresa = "Historial Test",
+                CUIT = "30333333333",
+                Activo = true,
+                FechaAlta = DateTime.UtcNow
+            });
+
+            var productoId = await _productoRepo.CreateAsync(new Producto
+            {
+                ClienteId = clienteId,
+                Codigo = "HIST-001",
                 Nombre = "Producto Historial",
                 UnidadMedida = UnidadMedida.Unidad,
                 Activo = true,
-                FechaCreacion = DateTime.Now
+                FechaCreacion = DateTime.UtcNow
             });
 
-            // Crear 5 fichas de costo
+            // Crear 5 fichas con fechas diferentes
             for (int i = 1; i <= 5; i++)
             {
                 var ficha = new FichaCostoEntity
                 {
                     ProductoId = productoId,
-                    FechaCalculo = DateTime.Now.AddDays(-i), // Días anteriores
+                    FechaCalculo = DateTime.UtcNow.AddDays(-i), // Más antiguas
                     CostoMateriasPrimas = 100m * i,
                     CostoManoObra = 50m * i,
-                    //ToDo: CostosIndirectos = 25m,
-                    CostosDirectosTotales = 25m,
-                    //ToDo: GastosGenerales = 10m,
-                    //ToDo:CostoTotal = (100m * i) + (50m * i) + 35m,
-                    MargenUtilidad = 30m,
-                    //ToDo: PrecioVentaSugerido = ((100m * i) + (50m * i) + 35m) * 1.3m,
+                    //ToDo:CostoTotal = 150m * i,
+                    MargenUtilidad = 25m + i,
+                    //ToDo:PrecioVentaSugerido = (150m * i) * (1 + (25m + i) / 100),
                     EstadoValidacion = EstadoValidacion.Valido,
-                    //ToDo:CalculadoPor = "TestUser"
+                    //ToDo:CalculadoPor = $"TestUser{i}"
                 };
-
-                var id = await _fichaRepo.CreateAsync(ficha);
-                _output.WriteLine($"Ficha {i} creada: ID {id}");
+                await _fichaRepo.CreateAsync(ficha);
             }
 
-            // Obtener historial
+            // Verificar historial ordenado (más reciente primero)
             var historial = await _fichaRepo.GetHistorialByProductoIdAsync(productoId, 10);
-            _output.WriteLine($"Historial recuperado: {historial.Count()} fichas");
             Assert.Equal(5, historial.Count());
 
-            // Verificar orden (más reciente primero)
             var fechas = historial.Select(f => f.FechaCalculo).ToList();
             Assert.True(fechas[0] > fechas[1]); // Primera más reciente que segunda
+            Assert.True(fechas[1] > fechas[2]); // Y así sucesivamente
 
-            // Obtener última ficha
-            var ultima = await _fichaRepo.GetUltimaFichaByProductoIdAsync(productoId);
-            //ToDo: _output.WriteLine($"Última ficha: CostoTotal = {ultima?.CostoTotal}");
-            Assert.NotNull(ultima);
-            Assert.Equal(5, historial.First().Id); // La última creada tiene ID 5 (o el mayor)
+            _output.WriteLine($"✓ {historial.Count()} fichas en orden cronológico inverso");
+
+            // Verificar limit
+            var limitado = await _fichaRepo.GetHistorialByProductoIdAsync(productoId, 3);
+            Assert.Equal(3, limitado.Count());
+            _output.WriteLine("✓ Limit funciona correctamente");
         }
 
         #endregion
@@ -410,15 +445,19 @@ namespace FichaCosto.Service.Tests
         [Fact]
         public async Task EscenarioCompleto_CrearFichaDeCosto()
         {
-            _output.WriteLine("\n=== TEST: EscenarioCompleto ===");
+            _output.WriteLine($"\n--- TEST: EscenarioCompleto ---");
 
             // 1. Crear cliente
             var cliente = new Cliente
             {
                 NombreEmpresa = "PyME Real S.A.",
                 CUIT = "30123456789",
+                Direccion = "Av. Siempre Viva 742",
+                ContactoNombre = "Homero Simpson",
+                ContactoTelefono = "555-0199",
+                ContactoEmail = "homero@pyme.com",
                 Activo = true,
-                FechaAlta = DateTime.Now
+                FechaAlta = DateTime.UtcNow
             };
             var clienteId = await _clienteRepo.CreateAsync(cliente);
             _output.WriteLine($"1. Cliente: {clienteId}");
@@ -427,45 +466,44 @@ namespace FichaCosto.Service.Tests
             var producto = new Producto
             {
                 ClienteId = clienteId,
-                Codigo = "PROD-REAL-001",
-                Nombre = "Producto Terminado",
+                Codigo = "DONA-001",
+                Nombre = "Donas Rosadas",
+                Descripcion = "Producto estrella",
                 UnidadMedida = UnidadMedida.Unidad,
                 Activo = true,
-                FechaCreacion = DateTime.Now
+                FechaCreacion = DateTime.UtcNow
             };
             var productoId = await _productoRepo.CreateAsync(producto);
             _output.WriteLine($"2. Producto: {productoId}");
 
-            // 3. Simular cálculo de ficha
-            var materiasPrimas = 150.50m;
-            var manoObra = 75.25m;
-            var indirectos = 25.00m;
-            var generales = 10.00m;
-            var costoTotal = materiasPrimas + manoObra + indirectos + generales;
+            // 3. Calcular y guardar ficha (simulación de cálculo)
+            var materiasPrimas = 25.50m; // Masa, glaseado
+            var manoObra = 15.00m;       // Preparación
+            var costoTotal = materiasPrimas + manoObra;
             var margen = 30m;
             var precioVenta = costoTotal * (1 + margen / 100);
 
             var ficha = new FichaCostoEntity
             {
                 ProductoId = productoId,
-                FechaCalculo = DateTime.Now,
+                FechaCalculo = DateTime.UtcNow,
                 CostoMateriasPrimas = materiasPrimas,
                 CostoManoObra = manoObra,
-                CostosDirectosTotales = indirectos,
-                //ToDo: GastosGenerales = generales,
-                //ToDo: CostoTotal = costoTotal,
+                CostoTotal = costoTotal,
                 MargenUtilidad = margen,
-                //ToDo: PrecioVentaSugerido = precioVenta,
+                PrecioVentaSugerido = precioVenta,
                 EstadoValidacion = margen <= 30 ? EstadoValidacion.Valido : EstadoValidacion.Excedido,
-                //ToDo: Observaciones = "Ficha generada en test",
-                //ToDo: CalculadoPor = "SistemaTest"
+                Observaciones = "Ficha generada en test de integración",
+                CalculadoPor = "SistemaTest",
+                //Yo:
+                CostosDirectosTotales = costoTotal,
+                PrecioVentaCalculado  = precioVenta
             };
 
             var fichaId = await _fichaRepo.CreateAsync(ficha);
-            _output.WriteLine($"3. Ficha creada: {fichaId}");
-            _output.WriteLine($"   Costo: ${costoTotal}, Precio: ${precioVenta}, Margen: {margen}%");
+            _output.WriteLine($"3. Ficha: {fichaId} (Costo: ${costoTotal}, Precio: ${precioVenta:F2})");
 
-            // 4. Verificar integridad
+            // 4. Verificar integridad de datos
             var clienteVerif = await _clienteRepo.GetByIdAsync(clienteId);
             var productoVerif = await _productoRepo.GetByIdAsync(productoId);
             var fichaVerif = await _fichaRepo.GetByIdAsync(fichaId);
@@ -473,108 +511,38 @@ namespace FichaCosto.Service.Tests
             Assert.NotNull(clienteVerif);
             Assert.NotNull(productoVerif);
             Assert.NotNull(fichaVerif);
+
             Assert.Equal(clienteId, productoVerif.ClienteId);
             Assert.Equal(productoId, fichaVerif.ProductoId);
+            //ToDo:Assert.Equal(costoTotal, fichaVerif.CostoTotal);
 
-            _output.WriteLine("4. ✓ Todos los datos verificados correctamente");
+            // 5. Verificar historial
+            var historial = await _fichaRepo.GetHistorialByProductoIdAsync(productoId);
+            Assert.Single(historial);
+
+            _output.WriteLine("4. ✓ Integridad verificada");
+            _output.WriteLine("--- ESCENARIO COMPLETADO ---");
         }
 
         #endregion
 
-        #region Dispose
+        #region IDisposable
 
         public void Dispose()
         {
-            _output.WriteLine($"\n[{DateTime.Now:HH:mm:ss.fff}] Disposing test...");
+            _output.WriteLine($"\n[{DateTime.Now:HH:mm:ss.fff}] === LIMPIEZA ===");
 
-            // =================================================================
-            // PASO CRÍTICO: Cerrar la conexión Keeper
-            // =================================================================
-            // Al cerrar esta conexión, la BD en memoria se destruye automáticamente
-            // Esto garantiza limpieza completa entre tests
-
-            if (_connectionKeeper != null)
+            // Cerrar la conexión real destruye la BD en memoria
+            if (_sharedConnection?.State == ConnectionState.Open)
             {
-                if (_connectionKeeper.State == ConnectionState.Open)
-                {
-                    _connectionKeeper.Close();
-                    _output.WriteLine("Keeper cerrada");
-                }
-                _connectionKeeper.Dispose();
-                _output.WriteLine("Keeper disposed");
+                _sharedConnection.Close();
+                _output.WriteLine("Conexión cerrada. BD en memoria destruida.");
             }
 
-            // Forzar GC para liberar recursos SQLite
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            _output.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] Test completamente limpiado");
+            _sharedConnection?.Dispose();
+            _output.WriteLine("=== FIN TEST ===");
         }
 
         #endregion
     }
-
-    // ========================================================================
-    // ANEXO: Explicación Técnica del Problema y Solución
-    // ========================================================================
-
-    /*
-    PROBLEMA ORIGINAL (sin Shared Cache):
-    -------------------------------------
-    
-    Test:                    Repository:
-    ------                   -----------
-    1. Abre conexión A  ---> 2. Abre conexión B (nueva)
-    3. Crea tablas            3. BD vacía (¡nueva!)
-    4. Cierra A               4. "No such table: Clientes"
-    
-    Cada "new SqliteConnection(':memory:')" = BD nueva e independiente
-    
-    
-    SOLUCIÓN CON SHARED CACHE:
-    --------------------------
-    
-    Connection String: "Data Source=:memory:;Cache=Shared"
-    
-    Test (Keeper):           Repository:
-    -------------            -----------
-    1. Abre conexión A  ---> 2. Abre conexión B
-    3. Crea tablas            3. ¡Misma BD! (compartida)
-    4. Mantiene A ABIERTA     4. Ve las tablas creadas
-       [durante todo test]
-    5. Dispose: Cierra A      5. BD destruida automáticamente
-    
-    
-    PUNTOS CLAVE:
-    -------------
-    1. Cache=Shared habilita el modo de caché compartido de SQLite
-    2. La primera conexión crea la BD en memoria
-    3. Conexiones subsiguientes con mismo string = misma BD
-    4. La BD se mantiene viva mientras haya AL MENOS UNA conexión abierta
-    5. Cuando la última conexión se cierra, la BD se destruye
-    
-    
-    ALTERNATIVAS CONSIDERADAS:
-    --------------------------
-    
-    A) SQLite en archivo temporal:
-       - Pros: Más simple, no requiere Cache=Shared
-       - Cons: I/O de disco más lento, requiere limpieza de archivos
-    
-    B) Inyectar conexión externa a repositories:
-       - Pros: Control total sobre la conexión
-       - Cons: Modifica la API de producción, código más complejo
-    
-    C) Connection Pooling (no funciona con :memory:):
-       - SQLite en memoria no soporta pooling estándar
-    
-    
-    POR QUÉ ELEGIMOS SHARED CACHE:
-    ------------------------------
-    - No requiere cambios en el código de producción (Repositories)
-    - Limpieza automática al cerrar la conexión Keeper
-    - Velocidad de ejecución (todo en RAM)
-    - Aislamiento entre tests (cada test = nueva instancia de clase)
-    */
 }
-

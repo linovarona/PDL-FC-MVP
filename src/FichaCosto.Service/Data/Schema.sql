@@ -98,6 +98,13 @@ CREATE TABLE IF NOT EXISTS FichasCosto (
     NumeroResolucionAplicada TEXT DEFAULT '209/2024',
     GeneradoPor TEXT DEFAULT 'Sistema',
     VersionCalculo TEXT DEFAULT '1.0.0-MVP',
+    CostoTotal DECIMAL(18,4) NOT NULL CHECK(CostoTotal >= 0),
+	PrecioVentaSugerido DECIMAL(18,4) NOT NULL CHECK(PrecioVentaSugerido >= 0),
+	Observaciones TEXT,
+	CalculadoPor TEXT,
+
+	
+
     
     FOREIGN KEY (ProductoId) REFERENCES Productos(Id) ON DELETE CASCADE
 );
