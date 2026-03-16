@@ -227,71 +227,46 @@ Antes de comenzar Fase 4 (Servicios de Negocio), verificar:
 
 **Si todos los checks pasan → Proceder a Fase 4**
 
----
-
-## 📝 NOTAS DE CIERRE
-
-**Rama de investigación:** `investigacion/sqlite-shared-cache`  
-**Merge a develop:** Completado con patrón IConnectionFactory  
-**Próximo milestone:** v0.4.0 - Servicios de Cálculo y Validación
-
-**Fin del Resumen Fase 3**
-
-*Documento generado para continuidad del desarrollo. Próximo entregable: Fase 4 - Servicios de Negocio*
-```
-
----
-
 ## 📝 Commit para Cierre de Fase
 
-```powershell
-cd "D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP"
-
-# Agregar todos los cambios de Fase 3
-git add src/FichaCosto.Service/Repositories/Interfaces/IConnectionFactory.cs
-git add src/FichaCosto.Service/Repositories/Implementations/SqliteConnectionFactory.cs
-git add src/FichaCosto.Service/Repositories/Implementations/ClienteRepository.cs
-git add src/FichaCosto.Service/Repositories/Implementations/ProductoRepository.cs
-git add src/FichaCosto.Service/Repositories/Implementations/FichaRepository.cs
-git add src/FichaCosto.Service/Data/DatabaseInitializationService.cs
-git add src/FichaCosto.Service/Program.cs
-git add tests/FichaCosto.Service.Tests/NonDisposableConnection.cs
-git add tests/FichaCosto.Service.Tests/TestConnectionFactory.cs
-git add tests/FichaCosto.Service.Tests/RepositorySharedTests.cs
-git add docs/RESUMEN-03.md
-git add docs/PROCEDIMIENTO-FASE-03.md
-
-# Commit de cierre de fase
-git commit -m "feat: Completa Fase 3 - Repositorios con IConnectionFactory
-
-Implementa capa de acceso a datos con patrón Repository:
-- Agrega IConnectionFactory para abstraer creación de conexiones
-- Implementa SqliteConnectionFactory (producción) y TestConnectionFactory (tests)
-- Crea NonDisposableConnection para resolver 'no such table' en SQLite :memory:
-- Implementa ClienteRepository, ProductoRepository, FichaRepository con Dapper
-- Ajusta FichaRepository a campos habilitados en MVP (sin CostosIndirectos/GastosGenerales)
-- Agrega DatabaseInitializationService para inicialización automática
-- Incluye 6 tests de integración estables y documentados
-
-Resuelve problema crítico de SQLite in-memory donde cada conexión con 'using'
-destruía la BD. Solución: conexión compartida con wrapper que ignora Dispose().
-
-Refs: Fase 3 completada, preparando Fase 4 (Servicios de Negocio)
-Closes: investigacion/sqlite-shared-cache"
-```
-
----
-
-## 🏷️ Tag Opcional
+### Paso 2: Merge develop → main (integrar Fase 3)
 
 ```powershell
-# Crear tag de versión
-git tag -a v0.3.0 -m "Fase 3: Repositorios Dapper + IConnectionFactory"
+# Merge de develop a main
+git merge develop --no-ff -m "release: v0.3.0 - Fase 3 Repositorios completada
 
-# Ver tag creado
-git tag -n1
+Integra cambios de develop:
+- Patrón IConnectionFactory para abstracción de conexiones
+- Repositories: Cliente, Producto, Ficha con Dapper
+- NonDisposableConnection para tests SQLite estables
+- 6 tests de integración adicionales
+- Solución a problema 'no such table' en SQLite :memory:
+
+Base estable para Fase 4 (Servicios de Negocio)"
+
+# Verificar estructura del merge
+git log --oneline --graph -5
 ```
 
----
 
-¿Necesitas ajustar algo del RESUMEN-03 o del mensaje de commit?
+### Paso 3: Taggear v0.3.0 en main (estado post-merge)
+
+```powershell
+# Crear tag v0.3.0 en el nuevo commit de merge
+git tag -a v0.3.0 -m "v0.3.0 - Fase 3: Repositorios con IConnectionFactory
+
+Features:
+- IConnectionFactory pattern (producción + tests)
+- NonDisposableConnection para SQLite in-memory
+- Repositories: ClienteRepository, ProductoRepository, FichaRepository
+- 6 tests de integración estables
+- Preparación para Fase 4 (Servicios de Negocio)
+
+Stack: .NET 9.0 + Dapper 2.1.66 + SQLite
+Estado: Funcional hasta Fase 3, lista para Fase 4"
+
+# Verificar ambos tags
+git tag -l -n1
+
+# Ver log completo con tags
+git log --oneline --decorate --graph -8
