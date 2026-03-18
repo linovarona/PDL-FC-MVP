@@ -1,4 +1,4 @@
-@FichaCosto.Service_HostAddress = http://localhost:5001
+@FichaCosto.Service_HostAddress = http://localhost:5010
 
 GET {{FichaCosto.Service_HostAddress}}/weatherforecast/
 Accept: application/json

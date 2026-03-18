@@ -26,12 +26,21 @@ public class ResultadoCalculoDto
     public string MensajeValidacion { get; set; } = string.Empty;
 
     // Metadata
-    public DateTime FechaCalculo { get; set; }
+    public DateTime? FechaCalculo { get; set; } 
+
     public string VersionSistema { get; set; } = "1.0.0-MVP";
 
     // Detalle para exportación
     public List<MateriaPrimaResultadoDto> DetalleMateriasPrimas { get; set; } = new();
     public ManoObraResultadoDto DetalleManoObra { get; set; } = new();
+ 
+    //Yo:Nuevas
+
+    public decimal MargenUtilidad { get; set; }
+    public string NumeroResolucionAplicada{ get; set; } = string.Empty;
+    public List<string> ObservacionesValidacion { get; set; } = new();
+
+
 }
 
 public class MateriaPrimaResultadoDto
