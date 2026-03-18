@@ -80,24 +80,24 @@
 **Tareas:**
 
 ### 4.1 CalculadoraCostoService
-- [ ] `CalcularCostosDirectos()`:
+- [x] `CalcularCostosDirectos()`:
   - Materias primas: Σ(Cantidad × CostoUnitario)
   - Mano obra: Horas × SalarioHora × (1 + CargasSociales/100)
-- [ ] `CalcularPrecioVenta()`:
+- [x] `CalcularPrecioVenta()`:
   - CostoTotal × (1 + MargenUtilidad/100)
-- [ ] `ValidarMargen30()`:
+- [x] `ValidarMargen30()`:
   - Retorna error si > 30%
   - Advertencia si 25-30%
 
 ### 4.2 ValidadorFichaService
-- [ ] Validar campos obligatorios
-- [ ] Validar cantidades > 0
-- [ ] Validar margen ≤ 30% (Res. 209/2024)
+- [x] Validar campos obligatorios
+- [x] Validar cantidades > 0
+- [x] Validar margen ≤ 30% (Res. 209/2024)
 
 ### 4.3 ExcelService (MVP)
-- [ ] `ImportarProductoDesdeExcel()` (carga MP y MO)
-- [ ] `ExportarFichaAExcel()` (genera archivo oficial)
-- [ ] Validar formato de archivo
+- [x] `ImportarProductoDesdeExcel()` (carga MP y MO)
+- [x] `ExportarFichaAExcel()` (genera archivo oficial)
+- [x] Validar formato de archivo
 
 **Criterios de aceptación:**
 - Cálculo correcto según Res. 148/2023
