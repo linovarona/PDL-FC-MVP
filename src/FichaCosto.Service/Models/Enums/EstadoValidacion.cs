@@ -15,6 +15,12 @@ public enum EstadoValidacion
     Excedido = 3,
 
     /// <summary>Error en datos de entrada</summary>
-    ErrorDatos = 4
-
+    ErrorDatos = 4,
+   
+    /// <summary>   /// Yo:/// </summary>
+    Pendiente = 5,
+    Validada = 6,
+    Rechazada = 7,
+    ValidadaConObservaciones = 8,
+    Error = 100
 }

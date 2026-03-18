@@ -1,4 +1,5 @@
-﻿using FichaCosto.Service.Models.Enums;
+﻿using FichaCosto.Service.Models.Entities;
+using FichaCosto.Service.Models.Enums;
 
 namespace FichaCosto.Service.Models.DTOs;
 
@@ -22,5 +23,17 @@ public class ResultadoValidacionDto
     public string? ArticuloAplicable { get; set; } = "Art. 3°";
 
     // Sugerencias
-    public string? Sugerencia { get; set; }
+    public string? Sugerencia { get; set; } 
+
+    //public string mensajes { get; set; } = string.Empty;
+    public List<string> Mensajes { get; set; } = new();
+    public List<string> Errores { get; set; } = new();
+
+    public bool EsValida { get; set; } = false;
+    public DateTime? FechaValidacion { get; set; }
+    public string ResolucionAplicada { get; set; } = "209/2024";
+
+    //public string Mensajes { get; set; } = string.Empty;
+
+
 }

@@ -37,11 +37,11 @@ public class Producto
     // Relaciones
     public virtual ICollection<MateriaPrima> MateriasPrimas { get; set; } = new List<MateriaPrima>();
     public virtual ICollection<FichaCosto> FichasCosto { get; set; } = new List<FichaCosto>();
-    public virtual ManoObraDirecta? ManoObra { get; set; }
+    //public virtual ManoObraDirecta? ManoObra { get; set; }
+    public virtual ManoObraDirecta? ManoObraDirecta { get; set; }
 
     //Yo
     //ToDo:Porque ManoObraDirecta es una lista?
     //     Ver si es asi, porque no una coleccion como las otras
     public List<ManoObraDirecta> ManoObras { get; set; } = new();
-
 }
