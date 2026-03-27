@@ -28,6 +28,8 @@ public class FichaCostoDto
 
     [StringLength(500)]
     public string? Observaciones { get; set; }
+
+
 }
 
 public class MateriaPrimaInputDto

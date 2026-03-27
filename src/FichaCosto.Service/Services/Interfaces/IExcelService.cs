@@ -40,5 +40,12 @@ namespace FichaCosto.Service.Services.Interfaces
         /// Valida que el archivo Excel tenga el formato correcto
         /// </summary>
         Task<(bool esValido, List<string> errores)> ValidarFormatoAsync(Stream stream);
+
+        /// <summary>
+        /// Importa materias primas y mano de obra desde un archivo Excel
+        /// </summary>
+        /// <param name="stream">Stream del archivo Excel</param>
+        /// <returns>Tupla con materias primas y mano de obra importadas</returns>
+        Task<(IEnumerable<MateriaPrima> MateriasPrimas, ManoObraDirecta? ManoObra)> ImportarDesdeExcelAsync(Stream stream);
     }
 }

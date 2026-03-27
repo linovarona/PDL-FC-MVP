@@ -30,5 +30,7 @@ public enum UnidadMedida
     MetroCubico = 8,
 
     /// <summary>Horas (para mano de obra)</summary>
-    Hora = 9
+    Hora = 9,
+
+    Dia = 10 //Yo
 }

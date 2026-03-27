@@ -131,5 +131,123 @@ namespace FichaCosto.Service.Services.Implementations
 
             return NivelAlertaMargen.Verde;
         }
+
+        /// <inheritdoc/>
+        public async Task<ResultadoValidacionDto> ValidarAsync(FichaCostoDto ficha)
+        {
+            var mensajes = new List<string>();
+            var errores = new List<string>();
+            var esValido = true;
+
+            _logger.LogInformation("Iniciando validación de ficha de entrada");
+
+            // 1. Validar ProductoId
+            if (ficha?.ProductoId <= 0)
+            {
+                errores.Add("El ID del producto es obligatorio y debe ser mayor a 0");
+                esValido = false;
+            }
+
+            // 2. Validar margen de utilidad (directamente en la ficha, no en Configuracion)
+            var margen = ficha?.MargenUtilidad ?? 0;
+
+            if (!ValidarMargenGanancia(margen))
+            {
+                errores.Add($"El margen de utilidad ({margen}%) excede el límite máximo de 30% según Res. 209/2024");
+                esValido = false;
+            }
+            else
+            {
+                var nivelAlerta = ObtenerNivelAlerta(margen);
+
+                if (nivelAlerta == NivelAlertaMargen.Amarillo)
+                {
+                    mensajes.Add($"Advertencia: Margen de {margen}% está cercano al límite legal (30%)");
+                }
+                else if (nivelAlerta == NivelAlertaMargen.Verde)
+                {
+                    mensajes.Add($"Margen de {margen}% dentro de límites aceptables");
+                }
+            }
+
+            // 3. Validar materias primas
+            if (ficha?.MateriasPrimas == null || !ficha.MateriasPrimas.Any())
+            {
+                errores.Add("Debe especificar al menos una materia prima");
+                esValido = false;
+            }
+            else
+            {
+                for (int i = 0; i < ficha.MateriasPrimas.Count; i++)
+                {
+                    var mp = ficha.MateriasPrimas[i];
+
+                    if (string.IsNullOrWhiteSpace(mp.Nombre))
+                    {
+                        errores.Add($"Materia prima #{i + 1}: El nombre es obligatorio");
+                        esValido = false;
+                    }
+
+                    // Usar 'Cantidad' en lugar de 'CantidadPorUnidad'
+                    if (mp.Cantidad <= 0)
+                    {
+                        errores.Add($"Materia prima '{mp.Nombre ?? $"#{i + 1}"}': La cantidad debe ser mayor a 0");
+                        esValido = false;
+                    }
+
+                    if (mp.CostoUnitario <= 0)
+                    {
+                        errores.Add($"Materia prima '{mp.Nombre ?? $"#{i + 1}"}': El costo unitario debe ser mayor a 0");
+                        esValido = false;
+                    }
+                }
+            }
+
+            // 4. Validar mano de obra (usando la propiedad ManoObra, no ManoObraDirecta)
+            if (ficha?.ManoObra == null)
+            {
+                errores.Add("La mano de obra es obligatoria");
+                esValido = false;
+            }
+            else
+            {
+                if (ficha.ManoObra.SalarioHora <= 0)
+                {
+                    errores.Add("El salario por hora debe ser mayor a 0");
+                    esValido = false;
+                }
+
+                if (ficha.ManoObra.Horas <= 0)
+                {
+                    errores.Add("Las horas de trabajo deben ser mayor a 0");
+                    esValido = false;
+                }
+
+                // Validar porcentaje de cargas sociales (rango razonable)
+                if (ficha.ManoObra.PorcentajeCargasSociales < 0 || ficha.ManoObra.PorcentajeCargasSociales > 100)
+                {
+                    errores.Add("El porcentaje de cargas sociales debe estar entre 0 y 100");
+                    esValido = false;
+                }
+            }
+
+            // Construir resultado
+            var resultado = new ResultadoValidacionDto
+            {
+                EsValido = esValido,
+                Estado = esValido ?
+                    (mensajes.Any(m => m.Contains("Advertencia")) ? EstadoValidacion.ValidadaConObservaciones : EstadoValidacion.Validada)
+                    : EstadoValidacion.Rechazada,
+                Mensajes = mensajes,
+                Errores = errores,
+                FechaValidacion = DateTime.UtcNow,
+                ResolucionAplicada = "209/2024"
+            };
+
+            _logger.LogInformation("Validación completada. Válida: {EsValido}, Errores: {Count}",
+                esValido, errores.Count);
+
+            return await Task.FromResult(resultado);
+        }
     }
 }

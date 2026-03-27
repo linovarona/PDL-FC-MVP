@@ -7,6 +7,7 @@ namespace FichaCosto.Service.Models.DTOs;
 /// </summary>
 public class ResultadoCalculoDto
 {
+    public int Id { get; set; } //Yo
     public int FichaCostoId { get; set; }
     public int ProductoId { get; set; }
     public string ProductoNombre { get; set; } = string.Empty;
@@ -16,10 +17,14 @@ public class ResultadoCalculoDto
     public decimal CostoMateriasPrimas { get; set; }
     public decimal CostoManoObra { get; set; }
     public decimal CostosDirectosTotales { get; set; }
+    public decimal CostoTotal { get; set; } //Yo
+
 
     // Margen y precio
     public decimal MargenUtilidadAplicado { get; set; }
     public decimal PrecioVentaCalculado { get; set; }
+    public decimal PrecioVentaSugerido { get; set; } //Yo
+    
 
     // Validación
     public EstadoValidacion EstadoValidacion { get; set; }
@@ -39,6 +44,9 @@ public class ResultadoCalculoDto
     public decimal MargenUtilidad { get; set; }
     public string NumeroResolucionAplicada{ get; set; } = string.Empty;
     public List<string> ObservacionesValidacion { get; set; } = new();
+    public string Observaciones { get; set; } = string.Empty; //Yo
+    public string CalculadoPor { get; set; } = string.Empty; //Yo
+    
 
 
 }

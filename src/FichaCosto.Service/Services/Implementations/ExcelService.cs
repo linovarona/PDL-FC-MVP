@@ -240,6 +240,33 @@ namespace FichaCosto.Service.Services.Implementations
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<(IEnumerable<MateriaPrima> MateriasPrimas, ManoObraDirecta? ManoObra)> ImportarDesdeExcelAsync(Stream stream)
+        {
+            _logger.LogInformation("Iniciando importación completa desde Excel");
+
+            // Importar materias primas desde la primera hoja
+            var materiasPrimas = await ImportarMateriasPrimasAsync(stream);
+
+            // Resetear stream para leer mano de obra si es posible
+            ManoObraDirecta? manoObra = null;
+            if (stream.CanSeek)
+            {
+                stream.Position = 0;
+                manoObra = await ImportarManoObraAsync(stream);
+            }
+            else
+            {
+                _logger.LogWarning("No se pudo resetear el stream para importar mano de obra");
+            }
+
+            _logger.LogInformation("Importación completa finalizada. MP: {CountMP}, MO: {TieneMO}",
+                materiasPrimas.Count(), manoObra != null);
+
+            return (materiasPrimas, manoObra);
+        }
+
+
         #region Métodos Privados
 
         private bool ValidarEncabezadosMateriasPrimas(IXLWorksheet worksheet)

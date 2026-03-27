@@ -101,5 +101,7 @@ namespace FichaCosto.Repositories.Implementations
             var count = await connection.ExecuteScalarAsync<int>(sql, new { Codigo = codigo, ExcludeId = excludeId });
             return count > 0;
         }
+
+
     }
 }

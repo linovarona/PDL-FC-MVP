@@ -65,7 +65,8 @@ public class FichaCosto
     //public EstadoValidacion EstadoValidacion { get; set; }
     public EstadoValidacion EstadoValidacion { get; set; } = EstadoValidacion.Valido;
     [StringLength(500)]
-    public string? ObservacionesValidacion { get; set; }
+  //  public string? ObservacionesValidacion { get; set; } //Yo
+    public List<string> ObservacionesValidacion { get; set; } = new();
 
     [StringLength(50)]
     public string? NumeroResolucionAplicada { get; set; } = "209/2024";

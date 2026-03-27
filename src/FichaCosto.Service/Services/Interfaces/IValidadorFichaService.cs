@@ -29,6 +29,13 @@ namespace FichaCosto.Service.Services.Interfaces
         /// <param name="margenUtilidad">Porcentaje de margen</param>
         /// <returns>Nivel de alerta (Verde, Amarillo, Rojo)</returns>
         NivelAlertaMargen ObtenerNivelAlerta(decimal margenUtilidad);
+
+        /// <summary>
+        /// Valida una ficha de costo (datos de entrada) antes de calcular
+        /// </summary>
+        /// <param name="ficha">DTO con datos de la ficha a validar</param>
+        /// <returns>Resultado de validación con errores si los hay</returns>
+        Task<ResultadoValidacionDto> ValidarAsync(FichaCostoDto ficha);
     }
 
     /// <summary>

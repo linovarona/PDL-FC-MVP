@@ -28,8 +28,8 @@ public class MateriaPrima
 
     [Required]
     [Column(TypeName = "decimal(18,4)")]
+    //public decimal Cantidad { get; set; }
     public decimal Cantidad { get; set; }
-
     [Required]
     [Column(TypeName = "decimal(18,4)")]
     public decimal CostoUnitario { get; set; }

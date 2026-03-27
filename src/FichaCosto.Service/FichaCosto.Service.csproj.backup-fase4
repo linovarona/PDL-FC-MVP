@@ -10,8 +10,6 @@
     <Content Remove="nuget.config" />
   </ItemGroup>
 
- 
-
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.2" />
     <PackageReference Include="Dapper" Version="2.1.66" />
@@ -21,21 +19,12 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
     <PackageReference Include="Serilog" Version="4.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
-	  <!--PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" /-->
-  
-	<!-- Swashbuckle - ACTUALIZADO con Annotations -->
-	<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
-	<PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.1.5" />
-  </ItemGroup>	
-	
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+  </ItemGroup>
+
     <ItemGroup>
 		<None Update="Data\Schema.sql">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Controllers\Responses\" />
-      <Folder Include="Controllers\Requests\" />
-    </ItemGroup>
 </Project>
