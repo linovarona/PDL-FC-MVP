@@ -30,3 +30,5 @@ coverage/
 /NuGetLocal/packages
 /publish
 NuGetLocal/extensions/sqlite-viewer-0.5.13.vsix
+/publish.old
+/NuGetLocal

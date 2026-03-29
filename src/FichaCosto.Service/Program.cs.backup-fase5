@@ -1,0 +1,74 @@
+﻿using FichaCosto.Repositories.Implementations;
+using FichaCosto.Repositories.Interfaces;
+using FichaCosto.Service.Services.Implementations;
+using FichaCosto.Service.Services.Interfaces;
+using Microsoft.OpenApi.Models;
+using Serilog;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+// ✅ Swashbuckle 6.5.0 + OpenApi 1.6.14
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "FichaCosto API",
+        Version = "v1",
+        Description = "API para automatización de fichas de costo según Res. 148/2023 y 209/2024",
+        Contact = new OpenApiContact
+        {
+            Name = "PDL Solutions",
+            Email = "soporte@pdl.cu"
+        }
+    });
+
+    // Incluir comentarios XML si existen
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+});
+
+// Database
+builder.Services.AddSingleton<IConnectionFactory, SqliteConnectionFactory>();
+
+// Repositories
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IFichaRepository, FichaRepository>();
+
+// Services
+builder.Services.AddScoped<ICalculadoraCostoService, CalculadoraCostoService>();
+builder.Services.AddScoped<IValidadorFichaService, ValidadorFichaService>();
+builder.Services.AddScoped<IExcelService, ExcelService>();
+
+// Logging
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
+
+var app = builder.Build();
+
+// ✅ Swagger Middleware
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FichaCosto API v1");
+        c.RoutePrefix = "swagger";
+    });
+}
+// Health check endpoint
+app.MapGet("/api/health", () => new { status = "OK", timestamp = DateTime.UtcNow });
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();

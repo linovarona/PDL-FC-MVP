@@ -15,6 +15,7 @@ namespace FichaCosto.Service.Tests
         {
             get => _inner.ConnectionString;
             set => _inner.ConnectionString = value;
+
         }
 
         public int ConnectionTimeout => _inner.ConnectionTimeout;
