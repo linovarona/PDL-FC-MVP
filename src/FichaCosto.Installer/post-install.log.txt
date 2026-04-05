@@ -1,0 +1,50 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20260405042816
+Nombre de usuario: DESKTOP-8ANMC2B\Yo
+Usuario RunAs: DESKTOP-8ANMC2B\Yo
+Nombre de la configuración: 
+Máquina: DESKTOP-8ANMC2B (Microsoft Windows NT 10.0.19041.0)
+Aplicación host: C:\Windows\system32\WindowsPowerShell\v1.0\PowerShell_ISE.exe
+Id. de proceso: 5664
+PSVersion: 5.1.19041.1
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.1
+BuildVersion: 10.0.19041.1
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+La transcripción ha comenzado. El archivo de salida es C:\Users\Yo\AppData\Local\Temp\FichaCosto-Install-Logs\post-install.log
+=== FICHA COSTO SERVICE - POST-INSTALACION ===
+
+[1/6] Configurando permisos de Logs...
+ADVERTENCIA: Error configurando permisos de Logs: Excepción al llamar a "AddAccessRule" con los argumentos "1": "No se pudieron convertir algunas o todas las referencias de identidad."
+
+[2/6] Inicializando base de datos SQLite...
+ADVERTENCIA: Error inicializando base de datos: Excepción al llamar a "AddAccessRule" con los argumentos "1": "No se pudieron convertir algunas o todas las referencias de identidad."
+
+[3/6] Configurando reglas de firewall...
+  ✓ Regla de firewall creada para puerto 5000
+
+[4/6] Verificando estado del servicio...
+  Estado del servicio: Stopped
+  Intentando iniciar servicio...
+  ✓ Servicio iniciado correctamente
+
+[5/6] Verificando endpoint HTTP...
+  ✓ Swagger UI accesible en http://localhost:5000/swagger
+
+[6/6] Generando resumen de instalacion...
+PS D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer> ErrorTerminación(ForEach-Object): "No se puede enlazar el parámetro 'RemainingScripts'. No se puede convertir el valor "else" de tipo "System.String" al tipo "System.Management.Automation.ScriptBlock"."
+>> ErrorTerminación(ForEach-Object): "No se puede enlazar el parámetro 'RemainingScripts'. No se puede convertir el valor "else" de tipo "System.String" al tipo "System.Management.Automation.ScriptBlock"."
+>> ErrorTerminación(ForEach-Object): "No se puede enlazar el parámetro 'RemainingScripts'. No se puede convertir el valor "else" de tipo "System.String" al tipo "System.Management.Automation.ScriptBlock"."
+ForEach-Object : No se puede enlazar el parámetro 'RemainingScripts'. No se puede convertir el valor "else" de
+tipo "System.String" al tipo "System.Management.Automation.ScriptBlock".
+En D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\post-install.ps1: 224 Carácter: 140
++ ... -Object -First 1 | ForEach-Object {"OK"} else {"REVISION REQUERIDA"})
++                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [ForEach-Object], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : CannotConvertArgumentNoMessage,Microsoft.PowerShell.Commands.ForEachObjectCommand
+
