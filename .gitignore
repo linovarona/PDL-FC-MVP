@@ -35,3 +35,7 @@ NuGetLocal/extensions/sqlite-viewer-0.5.13.vsix
 /publish.old
 /NuGetLocal
 /Tools
+src/FichaCosto.Installer/install.ps1
+src/FichaCosto.Installer/post-install.ps1
+src/FichaCosto.Installer/post-install.ps1
+src/FichaCosto.Installer/install.ps1
