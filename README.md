@@ -14,7 +14,7 @@ Este MVP incluye las funcionalidades críticas:
 ## 🚀 Requisitos
 
 - Windows 10/11 Pro o Enterprise (64-bit)
-- .NET 8.0 Runtime
+- .NET 9.0 Runtime
 - Microsoft Excel 2016+ (para import/export)
 - 100 MB espacio en disco
 - Puerto 5000 disponible
@@ -118,4 +118,4 @@ PDL-FC/
 
 **Versión:** 1.0.0-MVP  
 **Fecha:** Marzo 2026  
-**Stack:** .NET 8.0, SQLite, Windows Service
+**Stack:** .NET 9.0, SQLite, Windows Service

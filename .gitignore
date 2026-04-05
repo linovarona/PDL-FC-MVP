@@ -29,7 +29,9 @@ coverage/
 *.cobertura.xml
 /NuGetLocal/packages
 /publish
+/NuGetLocal/packages
+/publish
 NuGetLocal/extensions/sqlite-viewer-0.5.13.vsix
-/NuGetLocal
 /publish.old
+/NuGetLocal
 /Tools

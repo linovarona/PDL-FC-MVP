@@ -1,0 +1,91 @@
+[2180:16EC][2026-04-05T04:27:03]i001: Burn x86 v6.0.2, Windows v10.0 x64 (Build 19041: Service Pack 0), path: D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\FichaCostoService-Bundle.exe
+[2180:16EC][2026-04-05T04:27:03]i009: Command Line: '/quiet /norestart /log C:\Users\Yo\AppData\Local\Temp\FichaCosto-Install-Logs\bundle-install.log'
+[2180:16EC][2026-04-05T04:27:03]i000: Setting string variable 'WixBundleSourceProcessPath' to value 'D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\FichaCostoService-Bundle.exe'
+[2180:16EC][2026-04-05T04:27:03]i000: Setting string variable 'WixBundleSourceProcessFolder' to value 'D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\'
+[2180:16EC][2026-04-05T04:27:03]i000: Setting string variable 'WixBundleOriginalSource' to value 'D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\FichaCostoService-Bundle.exe'
+[2180:16EC][2026-04-05T04:27:03]i000: Setting string variable 'WixBundleOriginalSourceFolder' to value 'D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\'
+[2180:16EC][2026-04-05T04:27:04]i000: Setting string variable 'WixBundleLog' to value 'C:\Users\Yo\AppData\Local\Temp\FichaCosto-Install-Logs\bundle-install.log'
+[2180:01B4][2026-04-05T04:27:04]i000: Setting version variable 'WixBundleFileVersion' to value '6.0.2.0'
+[2180:01B4][2026-04-05T04:27:04]i000: Setting numeric variable 'WixStdBAShowVersion' to value 1
+[2180:01B4][2026-04-05T04:27:04]i000: Setting numeric variable 'WixStdBALanguageId' to value 1033
+[2180:01B4][2026-04-05T04:27:04]e000: Failed to load file into license richedit control from path 'C:\Windows\TEMP\{A5C054A2-F29E-4039-9F51-62814AD876C7}\.ba\license.rtf' manifest value: license.rtf
+[2180:16EC][2026-04-05T04:27:05]i100: Detect begin, 4 packages
+[2180:16EC][2026-04-05T04:27:05]i000: Setting numeric variable 'AspNetRuntimeInstalled' to value 1
+[2180:16EC][2026-04-05T04:27:05]i000: Setting numeric variable 'DesktopRuntimeInstalled' to value 1
+[2180:16EC][2026-04-05T04:27:05]i000: Setting numeric variable 'NetRuntimeInstalled' to value 1
+[2180:16EC][2026-04-05T04:27:05]i052: Condition 'NetRuntimeInstalled' evaluates to true.
+[2180:16EC][2026-04-05T04:27:05]i052: Condition 'AspNetRuntimeInstalled' evaluates to true.
+[2180:16EC][2026-04-05T04:27:05]i052: Condition 'DesktopRuntimeInstalled' evaluates to true.
+[2180:16EC][2026-04-05T04:27:05]i101: Detected package: NetRuntime, state: Present, cached: Yes, install registration state: (permanent), cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:05]i101: Detected package: AspNetRuntime, state: Present, cached: Yes, install registration state: (permanent), cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:05]i101: Detected package: DesktopRuntime, state: Present, cached: Yes, install registration state: (permanent), cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:05]i101: Detected package: FichaCostoService, state: Present, cached: Yes, install registration state: Present, cache registration state: Present
+[2180:16EC][2026-04-05T04:27:05]i199: Detect complete, result: 0x0, registration state: Full, cached: Yes, eligible for cleanup: No
+[2180:16EC][2026-04-05T04:27:05]i200: Plan begin, 4 packages, action: Install
+[2180:16EC][2026-04-05T04:27:05]w321: Skipping dependency registration on package with no dependency providers: NetRuntime
+[2180:16EC][2026-04-05T04:27:05]w321: Skipping dependency registration on package with no dependency providers: AspNetRuntime
+[2180:16EC][2026-04-05T04:27:05]w321: Skipping dependency registration on package with no dependency providers: DesktopRuntime
+[2180:16EC][2026-04-05T04:27:05]i222: Planned rollback boundary: 'WixDefaultBoundary', vital: Yes, transaction: No (default: No)
+[2180:16EC][2026-04-05T04:27:05]i201: Planned package: NetRuntime, state: Present, default requested: Present, ba requested: Present, execute: None, rollback: None, default cache strategy: Keep, ba requested strategy: Keep, cache: Vital, uncache: No, dependency: None, expected install registration state: (permanent), expected cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:05]i201: Planned package: AspNetRuntime, state: Present, default requested: Present, ba requested: Present, execute: None, rollback: None, default cache strategy: Keep, ba requested strategy: Keep, cache: Vital, uncache: No, dependency: None, expected install registration state: (permanent), expected cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:05]i201: Planned package: DesktopRuntime, state: Present, default requested: Present, ba requested: Present, execute: None, rollback: None, default cache strategy: Keep, ba requested strategy: Keep, cache: Vital, uncache: No, dependency: None, expected install registration state: (permanent), expected cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:05]i201: Planned package: FichaCostoService, state: Present, default requested: Present, ba requested: Present, execute: None, rollback: None, default cache strategy: Keep, ba requested strategy: Keep, cache: Vital, uncache: No, dependency: Register, expected install registration state: Present, expected cache registration state: Present
+[2180:16EC][2026-04-05T04:27:05]i299: Plan complete, result: 0x0
+[2180:16EC][2026-04-05T04:27:05]i300: Apply begin
+[2180:16EC][2026-04-05T04:27:05]i010: Launching elevated engine process.
+[2180:16EC][2026-04-05T04:27:06]i011: Launched elevated engine process.
+[2180:16EC][2026-04-05T04:27:06]i012: Connected to elevated engine.
+[1078:2190][2026-04-05T04:27:06]i358: Pausing automatic updates.
+[1078:2190][2026-04-05T04:27:06]i359: Paused automatic updates.
+[1078:2190][2026-04-05T04:27:06]i360: Creating a system restore point.
+[1078:2190][2026-04-05T04:27:08]i361: Created a system restore point.
+[1078:2190][2026-04-05T04:27:08]i370: Session begin, registration key: SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C}, scope: PerMachine, options: 0x3, disable resume: No
+[1078:2190][2026-04-05T04:27:08]i000: Caching bundle from: 'C:\Windows\TEMP\{A5C054A2-F29E-4039-9F51-62814AD876C7}\.be\FichaCostoService-Bundle.exe' to: 'C:\ProgramData\Package Cache\{F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C}\FichaCostoService-Bundle.exe'
+[1078:2190][2026-04-05T04:27:08]i320: Registering bundle dependency provider: {F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C}, version: 0.6.1
+[1078:2190][2026-04-05T04:27:08]i371: Updating session, registration key: SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C}, scope: PerMachine, resume: Active, restart initiated: No, disable resume: No
+[1078:0938][2026-04-05T04:27:09]i304: Verified existing payload: NetRuntime at path: C:\ProgramData\Package Cache\F4730F354C10898908AC43C455364554273BC10D367E5221B09D3AC41B8780EA\dotnet-runtime-9.0.3-win-x64.exe.
+[1078:0938][2026-04-05T04:27:10]i304: Verified existing payload: AspNetRuntime at path: C:\ProgramData\Package Cache\20D2929C4CB85F7BAC7B6875A79B877CA2AE5F59471C7B4C6EC089DE33CB9805\aspnetcore-runtime-9.0.3-win-x64.exe.
+[1078:0938][2026-04-05T04:27:12]i304: Verified existing payload: DesktopRuntime at path: C:\ProgramData\Package Cache\344603C607AD8A73DBFCCBA08F3D5400B28D831FE146541924EF02A5F838C844\windowsdesktop-runtime-9.0.3-win-x64.exe.
+[1078:0938][2026-04-05T04:27:12]i304: Verified existing payload: FichaCostoService at path: C:\ProgramData\Package Cache\{6275C5BA-A2D5-45B6-B9DB-9A792BEE0545}v0.6.1\FichaCostoService-Setup-v0.6.1.msi.
+[1078:2190][2026-04-05T04:27:12]i323: Registering package dependency provider: {6275C5BA-A2D5-45B6-B9DB-9A792BEE0545}_v0.6.1, version: 0.6.1, package: FichaCostoService
+[1078:2190][2026-04-05T04:27:12]i325: Registering dependency: {F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C} on package provider: {6275C5BA-A2D5-45B6-B9DB-9A792BEE0545}_v0.6.1, package: FichaCostoService
+[2180:16EC][2026-04-05T04:27:12]i373: Calculating whether to keep registration
+[2180:16EC][2026-04-05T04:27:12]i374:   package: NetRuntime, install registration state: (permanent), cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:12]i374:   package: AspNetRuntime, install registration state: (permanent), cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:12]i374:   package: DesktopRuntime, install registration state: (permanent), cache registration state: (permanent)
+[2180:16EC][2026-04-05T04:27:12]i374:   package: FichaCostoService, install registration state: Present, cache registration state: Present
+[2180:16EC][2026-04-05T04:27:12]i372: Session end, registration key: SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C}, scope: PerMachine, resume: ARP, restart: None, disable resume: No, default registration: Full, ba requested registration: Full
+[1078:2190][2026-04-05T04:27:12]i371: Updating session, registration key: SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C}, scope: PerMachine, resume: ARP, restart initiated: No, disable resume: No
+[1078:2190][2026-04-05T04:27:12]i420: Resuming automatic updates.
+[1078:2190][2026-04-05T04:27:12]i421: Resumed automatic updates.
+[2180:01B4][2026-04-05T04:27:12]i000: Setting string variable 'WixStdBARestartRequired' to value ''
+[2180:16EC][2026-04-05T04:27:12]i399: Apply complete, result: 0x0, restart: None, ba requested restart:  No
+[2180:16EC][2026-04-05T04:27:12]i500: Shutting down, exit code: 0x0
+[2180:16EC][2026-04-05T04:27:12]i502: Cleanup begin.
+[2180:16EC][2026-04-05T04:27:12]i503: Cleanup not required due to running Apply.
+[2180:16EC][2026-04-05T04:27:12]i599: Cleanup complete, result: 0x0
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: AspNetRuntimeInstalled = 1
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: DesktopRuntimeInstalled = 1
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: NetRuntimeInstalled = 1
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: RebootPending = 0
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleAction = 6
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleCommandLineAction = 6
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleElevated = 1
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleFileVersion = 6.0.2.0
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleInProgressName = 
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleInstalled = 1
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleLog = C:\Users\Yo\AppData\Local\Temp\FichaCosto-Install-Logs\bundle-install.log
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleManufacturer = PyMEs Dev Solutions
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleName = FichaCosto Service MVP Bundle
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleOriginalSource = D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\FichaCostoService-Bundle.exe
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleOriginalSourceFolder = D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleProviderKey = {F52FBFC9-6AD6-4E8B-AED4-7E0C5279B78C}
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleSourceProcessFolder = D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleSourceProcessPath = D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\FichaCostoService-Bundle.exe
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleTag = 
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleUILevel = 2
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixBundleVersion = 0.6.1
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixStdBALanguageId = 1033
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixStdBARestartRequired = 
+[2180:16EC][2026-04-05T04:27:12]i410: Variable: WixStdBAShowVersion = 1
+[2180:16EC][2026-04-05T04:27:12]i007: Exit code: 0x0, restarting: No

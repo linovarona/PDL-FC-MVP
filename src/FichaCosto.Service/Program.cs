@@ -1,45 +1,45 @@
-using FichaCosto.Repositories.Implementations;
+Ôªøusing FichaCosto.Repositories.Implementations;
 using FichaCosto.Repositories.Interfaces;
 using FichaCosto.Service.Data;
+//using FichaCosto.Service.Repositories;
 using FichaCosto.Service.Services;
 using FichaCosto.Service.Services.Implementations;
 using FichaCosto.Service.Services.Interfaces;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ========================================
-// CONFIGURACI”N DE SERVICIOS (DI)
-// ========================================
+// Configurar Serilog desde appsettings
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .CreateLogger();
 
-// Logging con Serilog
-builder.Host.UseSerilog((context, services, configuration) => configuration
-    .ReadFrom.Configuration(context.Configuration)
-    .ReadFrom.Services(services)
-    .Enrich.FromLogContext());
+builder.Host.UseSerilog();
 
-// Controllers y API
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-
-// Swagger/OpenAPI (Fase 5)
-builder.Services.AddSwaggerGen(c =>
+// Detectar si corre como Windows Service
+if (WindowsServiceHelpers.IsWindowsService())
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo //.Models.OpenApiInfo
+    builder.Host.UseWindowsService(options =>
     {
-        Title = "FichaCosto Service API",
-        Version = "v1",
-        Description = "API para automatizaciÛn de fichas de costo seg˙n Res. 148 / 2023 y 209 / 2024",
-        Contact = new Microsoft.OpenApi.OpenApiContact // .Models.OpenApiContact
-        {
-            Name = "PDL Solutions",
-            Email = "soporte@pdl.cu"
-        }
+        options.ServiceName = "FichaCostoService";
     });
 
-    // Habilitar anotaciones XML para documentaciÛn
-    var xmlFile = $"{ System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    // Configurar ContentRoot al directorio del ejecutable (importante para servicios)
+    builder.Host.UseContentRoot(AppContext.BaseDirectory);
+}
+
+// Servicios existentes
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "FichaCosto API", Version = "v1.0.0-MVP" });
+
+    // Incluir XML docs si existen
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
     {
@@ -47,81 +47,63 @@ builder.Services.AddSwaggerGen(c =>
     }
 });
 
-// CORS para Excel/Clientes externos
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowExcelClient", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
-// ========================================
-// SERVICIOS DE APLICACI”N (Fases 3 y 4)
-// ========================================
-
-// Database Context
-//builder.Services.AddSingleton<FichaCostoContext>();
+// Database & Repositories
 builder.Services.AddSingleton<DatabaseInitializer>();
+builder.Services.AddSingleton<IConnectionFactory, SqliteConnectionFactory>();
 
 
-// Repositorios (Fase 3)
+//builder.Services.AddScoped<IFichaCostoContext, FichaCostoContext>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IFichaRepository, FichaRepository>();
-//builder.Services.AddScoped<ICostoIndirectoRepository, CostoIndirectoRepository>();
-//builder.Services.AddScoped<IGastoGeneralRepository, GastoGeneralRepository>();
-//builder.Services.AddScoped<IMateriaPrimaRepository, MateriaPrimaRepository>();
-//builder.Services.AddScoped<IManoObraRepository, ManoObraRepository>();
 
-// Servicios de Negocio (Fase 4)
+// Business Services
 builder.Services.AddScoped<ICalculadoraCostoService, CalculadoraCostoService>();
 builder.Services.AddScoped<IValidadorFichaService, ValidadorFichaService>();
 builder.Services.AddScoped<IExcelService, ExcelService>();
 
-// ========================================
-// CONSTRUIR APLICACI”N
-// ========================================
-
 var app = builder.Build();
 
-// Inicializar base de datos
+// Asegurar creaci√≥n de directorio de logs
+var logsPath = Path.Combine(AppContext.BaseDirectory, "Logs");
+if (!Directory.Exists(logsPath))
+{
+    Directory.CreateDirectory(logsPath);
+}
+
+// Initialize Database
 using (var scope = app.Services.CreateScope())
 {
-    //var context = scope.ServiceProvider.GetRequiredService<FichaCostoContext>();
-    //DatabaseInitializer.Initialize(context);
     var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
     await initializer.InitializeAsync();
 
 }
 
-// ========================================
-// PIPELINE HTTP
-// ========================================
-
-if (app.Environment.IsDevelopment())
+// Swagger siempre disponible (√∫til para MVP)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint(" / swagger / v1 / swagger.json", "FichaCosto API v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "FichaCosto API v1.0.0-MVP");
+    c.RoutePrefix = "swagger";
+});
 
-app.UseHttpsRedirection();
-app.UseCors("AllowExcelClient");
 app.UseAuthorization();
 app.MapControllers();
 
-// Health check endpoint
-app.MapGet(" / api / health", () => new { status = "OK", timestamp = DateTime.UtcNow });
+// Health Check endpoint
+app.MapGet("/api/health", () => new { status = "OK", timestamp = DateTime.UtcNow, version = "v1.0.0-MVP" });
 
-// ========================================
-// INICIAR SERVICIO
-// ========================================
-
-Log.Information("Iniciando FichaCosto Service - Puerto 5000 / 5001");
-app.Run();
+try
+{
+    Log.Information("Iniciando FichaCosto Service v1.0.0-MVP...");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Fallo cr√≠tico al iniciar el servicio");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

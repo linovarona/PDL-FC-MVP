@@ -1,0 +1,81 @@
+﻿**********************
+Inicio de la transcripción de Windows PowerShell
+Hora de inicio: 20260405042703
+Nombre de usuario: DESKTOP-8ANMC2B\Yo
+Usuario RunAs: DESKTOP-8ANMC2B\Yo
+Nombre de la configuración: 
+Máquina: DESKTOP-8ANMC2B (Microsoft Windows NT 10.0.19041.0)
+Aplicación host: C:\Windows\system32\WindowsPowerShell\v1.0\PowerShell_ISE.exe
+Id. de proceso: 5664
+PSVersion: 5.1.19041.1
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.1
+BuildVersion: 10.0.19041.1
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+La transcripción ha comenzado. El archivo de salida es C:\Users\Yo\AppData\Local\Temp\FichaCosto-Install-Logs\install-main.log
+=== FICHA COSTO SERVICE - INSTALACION ===
+Inicio: 04/05/2026 04:27:03
+Origen: D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer
+
+[1/4] Verificando archivos de instalacion...
+  ✓ FichaCostoService-Bundle.exe encontrado
+  ✓ post-install.ps1 encontrado
+
+[2/4] Ejecutando instalador principal (Bundle)...
+    Esto instalara:
+      - .NET 9.0 Runtime
+      - ASP.NET Core 9.0 Runtime
+      - Windows Desktop Runtime 9.0
+      - FichaCosto Service MVP
+
+    Tiempo estimado: 2-3 minutos...
+  ✓ Bundle instalado correctamente
+
+[3/4] Verificando instalacion del servicio...
+  Esperando inicio del servicio... (0/30)
+  Esperando inicio del servicio... (1/30)
+  Esperando inicio del servicio... (2/30)
+  Esperando inicio del servicio... (3/30)
+  Esperando inicio del servicio... (4/30)
+  Esperando inicio del servicio... (5/30)
+  Esperando inicio del servicio... (6/30)
+  Esperando inicio del servicio... (7/30)
+  Esperando inicio del servicio... (8/30)
+  Esperando inicio del servicio... (9/30)
+  Esperando inicio del servicio... (10/30)
+  Esperando inicio del servicio... (11/30)
+  Esperando inicio del servicio... (12/30)
+  Esperando inicio del servicio... (13/30)
+  Esperando inicio del servicio... (14/30)
+  Esperando inicio del servicio... (15/30)
+  Esperando inicio del servicio... (16/30)
+  Esperando inicio del servicio... (17/30)
+  Esperando inicio del servicio... (18/30)
+  Esperando inicio del servicio... (19/30)
+  Esperando inicio del servicio... (20/30)
+  Esperando inicio del servicio... (21/30)
+  Esperando inicio del servicio... (22/30)
+  Esperando inicio del servicio... (23/30)
+  Esperando inicio del servicio... (24/30)
+  Esperando inicio del servicio... (25/30)
+  Esperando inicio del servicio... (26/30)
+  Esperando inicio del servicio... (27/30)
+  Esperando inicio del servicio... (28/30)
+  Esperando inicio del servicio... (29/30)
+ADVERTENCIA: Servicio instalado pero no inicio automaticamente. Estado: Stopped
+
+[4/4] Verificando estructura de archivos...
+  ✓ Directorio Logs existe
+  ✓ Directorio Data existe
+
+=== INSTALACION COMPLETADA ===
+Duracion: 1 min 12 seg
+Logs en: C:\Users\Yo\AppData\Local\Temp\FichaCosto-Install-Logs
+**********************
+Fin de la transcripción de Windows PowerShell
+Hora de finalización: 20260405042816
+**********************
