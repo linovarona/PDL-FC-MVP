@@ -159,11 +159,11 @@ Start-Process "http://localhost:5000/swagger"
 | Requisito | Especificación |
 |-----------|---------------|
 | Sistema Operativo | Windows 10/11 64-bit (Build 10240+) |
-| Privilegios | Administrador local |
-| Puerto TCP | 5000 (libre) |
-| Espacio en disco | 500 MB libres |
-| .NET Runtime | ❌ NO requerido (incluido en Bundle) |
-| PowerShell | 5.1+ (para scripts opcionales) |
+| Privilegios 		| Administrador local |
+| Puerto TCP 		| 5000 (libre) |
+| Espacio en disco 	| 500 MB libres |
+| .NET Runtime		| ❌ NO requerido (incluido en Bundle) |
+| PowerShell 		| 5.1+ (para scripts opcionales) |
 
 ---
 
@@ -196,11 +196,11 @@ Get-NetFirewallRule -DisplayName "FichaCosto Service*"
 
 | Síntoma | Causa Probable | Solución |
 |---------|---------------|----------|
-| Servicio no inicia | Puerto 5000 ocupado | `netstat -ano \| findstr :5000` |
-| Logs vacíos | Permisos ACL incorrectos | Ejecutar `post-install.ps1` nuevamente |
-| SQLite error | BD no inicializada | Verificar `fichacosto.db` existe |
-| Error 1618 | Instalación previa incompleta | Reiniciar Windows, reintentar |
-| Bundle no ejecuta | Falta `license.rtf` | Crear archivo vacío en misma carpeta |
+| Servicio no inicia 	| Puerto 5000 ocupado | `netstat -ano \| findstr :5000` |
+| Logs vacíos 			| Permisos ACL incorrectos | Ejecutar `post-install.ps1` nuevamente |
+| SQLite error 			| BD no inicializada | Verificar `fichacosto.db` existe |
+| Error 1618 			| Instalación previa incompleta | Reiniciar Windows, reintentar |
+| Bundle no ejecuta 	| Falta `license.rtf` | Crear archivo vacío en misma carpeta |
 
 ---
 
@@ -216,10 +216,10 @@ Get-NetFirewallRule -DisplayName "FichaCosto Service*"
 ### Entregables Fase 7
 | Documento | Audiencia | Contenido |
 |-----------|-----------|-----------|
-| `MANUAL_USUARIO_MVP.md` | Cliente PyME | Instalación paso a paso, uso básico, FAQs |
-| `MANUAL_TECNICO_MVP.md` | Admin IT | Arquitectura, configuración avanzada, backup |
-| `CHANGELOG.md` | Desarrolladores | Historial de versiones, breaking changes |
-| `README.md` | GitHub | Overview, quickstart, badges |
+| `MANUAL_USUARIO_MVP.md` 	| Cliente PyME | Instalación paso a paso, uso básico, FAQs |
+| `MANUAL_TECNICO_MVP.md` 	| Admin IT | Arquitectura, configuración avanzada, backup |
+| `CHANGELOG.md` 			| Desarrolladores | Historial de versiones, breaking changes |
+| `README.md` 				| GitHub | Overview, quickstart, badges |
 
 ### Consideraciones para Fase 7
 - Screenshots de Swagger UI para manual de usuario
@@ -289,13 +289,13 @@ git push origin main --tags
 
 | Aspecto | Fase 6.1 (Scripts) | Fase 6.2 (WiX Bundle) |
 |---------|-------------------|----------------------|
-| Instalación | Manual (xcopy + PS) | Automatizada (EXE único) |
-| Runtimes .NET | Requería pre-instalación | Embebidos en Bundle |
-| Proceso | 5-10 minutos técnico | 2-3 minutos click-next |
-| Rollback | Manual | Automático (Burn) |
-| Detección estado | Scripts check-service | RegistrySearch en Bundle |
-| Permisos | Scripts PowerShell | icacls en post-install |
-| Desinstalación | Manual | Panel de Control → Desinstalar |
+| Instalación 		| Manual (xcopy + PS) 		| Automatizada (EXE único) |
+| Runtimes .NET 	| Requería pre-instalación 	| Embebidos en Bundle |
+| Proceso 			| 5-10 minutos técnico 		| 2-3 minutos click-next |
+| Rollback 			| Manual 					| Automático (Burn) |
+| Detección estado 	| Scripts check-service 	| RegistrySearch en Bundle |
+| Permisos 			| Scripts PowerShell 		| icacls en post-install |
+| Desinstalación 	| Manual					| Panel de Control → Desinstalar |
 
 ---
 

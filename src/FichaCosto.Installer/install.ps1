@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = "Stop"
 $StartTime = Get-Date
 
-cd "D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer"
+cd $SourceDir
 
 
 # Crear directorio de logs de instalación
@@ -26,8 +26,6 @@ Start-Transcript -Path $MainLog -Force
 Write-Host "=== FICHA COSTO SERVICE - INSTALACION ===" -ForegroundColor Cyan
 Write-Host "Inicio: $StartTime" -ForegroundColor Gray
 Write-Host "Origen: $SourceDir" -ForegroundColor Gray
-
-cd "D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer"
 
 # Verificar archivos necesarios
 $requiredFiles = @(

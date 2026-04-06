@@ -90,9 +90,9 @@ try {
     $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
         "BUILTIN\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow"
     )
-    $acl.AddAccessRule($systemRule)
-    $acl.AddAccessRule($adminRule)
-    Set-Acl $dataPath $acl
+  #  $acl.AddAccessRule($systemRule)
+  #  $acl.AddAccessRule($adminRule)
+  #  Set-Acl $dataPath $acl
 
     # Crear base de datos vacía si no existe Schema.sql o si queremos crearla
     if (Test-Path $schemaPath) {
@@ -207,6 +207,20 @@ if (-not $success) {
 }
 
 # 6. RESUMEN FINAL Y DIAGNOSTICO
+
+# Función helper para verificar permisos (agregar al inicio del script o antes del resumen)
+function Test-PermissionStatus {
+    param([string]$Path)
+    try {
+        $acl = Get-Acl $Path -ErrorAction Stop
+        $hasSystem = $acl.Access | Where-Object { $_.IdentityReference -match "SYSTEM|S-1-5-18" } | Select-Object -First 1
+        if ($hasSystem) { return "OK" } else { return "REVISION REQUERIDA" }
+    } catch {
+        return "ERROR"
+    }
+}
+
+
 Write-Host "`n[6/6] Generando resumen de instalacion..." -ForegroundColor Yellow
 
 $summary = @"
@@ -221,8 +235,9 @@ ESTADO DEL SERVICIO:
 $(Get-Service FichaCostoService | Select-Object Name, Status, StartType | Format-Table | Out-String)
 
 PERMISOS DE CARPETAS CRITICAS:
-Logs: $((Get-Acl (Join-Path $InstallPath "Logs")).Access | Where-Object {$_.IdentityReference -like "*SYSTEM*"} | Select-Object -First 1 | ForEach-Object {"OK"} else {"REVISION REQUERIDA"})
-Data: $((Get-Acl (Join-Path $InstallPath "Data")).Access | Where-Object {$_.IdentityReference -like "*SYSTEM*"} | Select-Object -First 1 | ForEach-Object {"OK"} else {"REVISION REQUERIDA"})
+$logsStatus = Test-PermissionStatus (Join-Path $InstallPath "Logs")
+$dataStatus = Test-PermissionStatus (Join-Path $InstallPath "Data")
+
 
 URL DE ACCESO:
 http://localhost:$ServicePort/swagger
