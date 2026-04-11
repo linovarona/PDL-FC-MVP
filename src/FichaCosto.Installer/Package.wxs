@@ -1,65 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+     xmlns:fire="http://wixtoolset.org/schemas/v4/wxs/firewall">
+
   <Package Name="FichaCosto Service MVP"
-           Language="3082"
-           Version="0.6.1"
+           Language="1033"
+           Version="0.6.2"
            Manufacturer="PyMEs Dev Solutions"
-           UpgradeCode="7a40714b-cf06-4196-9cf8-f7f8065efe89"
+           UpgradeCode="f8f3bd79-de8c-45a0-96a3-576edd3ab121"
            Scope="perMachine">
     
-    <MajorUpgrade DowngradeErrorMessage="Ya existe una versión más nueva instalada." />
+    <MajorUpgrade DowngradeErrorMessage="Una versión posterior ya está instalada." />
     <MediaTemplate EmbedCab="yes" />
-    
-    <!-- Solo la app y el servicio, sin runtimes -->
+
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="FichaCostoService">
-        <Directory Id="LOGSFOLDER" Name="Logs" />
         <Directory Id="DATAFOLDER" Name="Data" />
+        <Directory Id="LOGSFOLDER" Name="Logs" />
       </Directory>
     </StandardDirectory>
-    
+
     <Feature Id="MainFeature" Title="FichaCosto Service" Level="1">
-      <ComponentRef Id="Comp_Service" />
-      <ComponentRef Id="Comp_Logs" />
-      <ComponentRef Id="Comp_Data" />
-      <ComponentGroupRef Id="PublishedFiles" />
+      <ComponentGroupRef Id="ServiceComponents" />
+      <ComponentGroupRef Id="DatabaseComponents" />
+      <ComponentRef Id="LogsPermissions" />
+      <ComponentRef Id="FirewallRule" />
     </Feature>
-    
-    <Component Id="Comp_Logs" Directory="LOGSFOLDER" Guid="6ab008a4-96c4-4209-b303-17e9045dbc05">
-      <CreateFolder />
-    </Component>
-    
-    <Component Id="Comp_Data" Directory="DATAFOLDER" Guid="aa114fee-4072-4a3b-b063-fdde6f2505cd">
-      <CreateFolder />
-    </Component>
-    
-    <Component Id="Comp_Service" Directory="INSTALLFOLDER" Guid="489bb50b-9097-4bfb-8e50-f769d6993b0e">
-      <File Id="File_ServiceExe" Source="..\..\publish\FichaCosto.Service.exe" KeyPath="yes" Vital="yes" />
+
+    <!-- Servicio Windows -->
+    <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
+      <Component>
+        <File Source="$(var.PublishDir)\FichaCosto.Service.exe" KeyPath="yes" />
+        <ServiceInstall Id="FichaCostoService"
+                        Name="FichaCostoService"
+                        DisplayName="FichaCosto Service MVP"
+                        Description="Servicio de automatización de fichas de costo para PyMEs"
+                        Start="auto"
+                        Type="ownProcess"
+                        ErrorControl="normal"
+                        Account="NT AUTHORITY\LocalService" />
+        <ServiceControl Id="StartService" 
+                      Name="FichaCostoService" 
+                      Start="install" 
+                      Stop="both" 
+                      Remove="uninstall" />
+      </Component>
       
-      <ServiceInstall Id="ServiceInstaller"
-                      Name="FichaCostoService"
-                      DisplayName="FichaCosto Service MVP"
-                      Description="Automatización de fichas de costo"
-                      Start="auto"
-                      Type="ownProcess"
-                      ErrorControl="normal"
-                      Account="LocalSystem"
-                      Arguments="--environment Production"
-                      Vital="yes" />
-                      
-      <ServiceControl Id="ServiceControl"
-                      Name="FichaCostoService"
-                      Start="install"
-                      Stop="both"
-                      Remove="uninstall"
-                      Wait="yes" />
-    </Component>
-    
-    <ComponentGroup Id="PublishedFiles" Directory="INSTALLFOLDER">
-      <Files Include="..\..\publish\**">
-        <Exclude Files="..\..\publish\FichaCostoService.exe" />
-      </Files>
+      <!-- DLLs necesarias -->
+      <Component><File Source="$(var.PublishDir)\FichaCosto.Service.dll" /></Component>
+      <Component><File Source="$(var.PublishDir)\FichaCosto.Core.dll" /></Component>
+      <Component><File Source="$(var.PublishDir)\FichaCosto.Infrastructure.dll" /></Component>
+      <Component><File Source="$(var.PublishDir)\System.Data.SQLite.dll" /></Component>
+      <Component><File Source="$(var.PublishDir)\runtimes\win-x64\native\SQLite.Interop.dll" /></Component>
     </ComponentGroup>
-    
+
+    <!-- Base de Datos y Seed -->
+    <ComponentGroup Id="DatabaseComponents" Directory="DATAFOLDER">
+      <Component>
+        <File Source="$(var.PublishDir)\Data\Schema.sql" />
+        <File Source="$(var.PublishDir)\Data\SeedData.sql" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Permisos Logs para SYSTEM (S-1-5-18) y Administradores -->
+    <Component Id="LogsPermissions" Directory="LOGSFOLDER">
+      <CreateFolder />
+      <!-- SYSTEM = S-1-5-18 -->
+      <util:PermissionEx User="NT AUTHORITY\SYSTEM" 
+                         GenericAll="yes" 
+                         CreateFile="yes" 
+                         CreateChild="yes" 
+                         DeleteChild="yes" />
+      <!-- Administradores locales -->
+      <util:PermissionEx User="BUILTIN\Administrators" 
+                         GenericAll="yes" />
+    </Component>
+
+    <!-- Regla Firewall Puerto 5000 -->
+    <Component Id="FirewallRule" Directory="INSTALLFOLDER">
+      <fire:FirewallRule Id="FichaCostoPort5000"
+                         Name="FichaCosto Service (Port 5000)"
+                         Port="5000"
+                         Protocol="tcp"
+                         Scope="localSubnet"
+                         Profile="all" />
+    </Component>
+
   </Package>
 </Wix>

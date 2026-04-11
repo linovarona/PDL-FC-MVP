@@ -8,8 +8,6 @@ param(
 $ErrorActionPreference = "Stop"
 $StartTime = Get-Date
 
-cd $SourceDir
-
 New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 $MainLog = "$LogDir\install-main.log"
 Start-Transcript -Path $MainLog -Force
