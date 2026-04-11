@@ -15,6 +15,7 @@
         ShowVersion="yes" />
     </BootstrapperApplication>
 
+    <!-- CORREGIDO: 9.0.3 en vez de 9.0.4 -->
     <util:RegistrySearch Id="NetRuntimeInstalled"
                          Root="HKLM"
                          Key="SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App"
