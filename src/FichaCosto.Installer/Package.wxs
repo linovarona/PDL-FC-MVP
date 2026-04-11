@@ -13,7 +13,6 @@
     <MajorUpgrade DowngradeErrorMessage="Una versión posterior ya está instalada." />
     <MediaTemplate EmbedCab="yes" />
 
-    <!-- CAMBIO: ProgramFiles64Folder para x64 nativo -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="FichaCostoService">
         <Directory Id="DATAFOLDER" Name="Data" />
@@ -25,12 +24,13 @@
       <ComponentGroupRef Id="ServiceComponents" />
       <ComponentGroupRef Id="DatabaseComponents" />
       <ComponentRef Id="LogsPermissions" />
-      <ComponentRef Id="FirewallRule" />
     </Feature>
 
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component>
         <File Source="$(var.PublishDir)\FichaCosto.Service.exe" KeyPath="yes" />
+        
+        <!-- CORREGIDO: FirewallRule DENTRO de ServiceInstall -->
         <ServiceInstall Id="FichaCostoService"
                         Name="FichaCostoService"
                         DisplayName="FichaCosto Service MVP"
@@ -38,7 +38,14 @@
                         Start="auto"
                         Type="ownProcess"
                         ErrorControl="normal"
-                        Account="NT AUTHORITY\LocalService" />
+                        Account="NT AUTHORITY\LocalService">
+          <fire:FirewallRule Id="FichaCostoPort5000"
+                             Name="FichaCosto Service (Port 5000)"
+                             Port="5000"
+                             Protocol="tcp"
+                             Profile="all" />
+        </ServiceInstall>
+        
         <ServiceControl Id="StartService" 
                       Name="FichaCostoService" 
                       Start="install" 
@@ -50,33 +57,23 @@
       <Component><File Source="$(var.PublishDir)\FichaCosto.Service.deps.json" /></Component>
       <Component><File Source="$(var.PublishDir)\FichaCosto.Core.dll" /></Component>
       <Component><File Source="$(var.PublishDir)\FichaCosto.Infrastructure.dll" /></Component>
-      <Component><File Source="$(var.PublishDir)\System.Data.SQLite.dll" /></Component>
+      <Component><File Source="$(var.PublishDir)\Microsoft.Data.Sqlite.dll" /></Component>
+      <Component><File Source="$(var.PublishDir)\e_sqlite3.dll" /></Component>
     </ComponentGroup>
 
     <ComponentGroup Id="DatabaseComponents" Directory="DATAFOLDER">
       <Component>
         <File Source="$(var.PublishDir)\Data\Schema.sql" />
         <File Source="$(var.PublishDir)\Data\SeedData.sql" />
-        <CreateFolder />
       </Component>
     </ComponentGroup>
 
-    <!-- NUEVO: Permisos para LocalService (SYSTEM) -->
-    <Component Id="LogsPermissions" Directory="LOGSFOLDER">
-      <CreateFolder />
-      <util:PermissionEx User="NT AUTHORITY\SYSTEM" 
-                         GenericAll="yes" />
-      <util:PermissionEx User="BUILTIN\Administrators" 
-                         GenericAll="yes" />
-    </Component>
-
-    <!-- NUEVO: Firewall automático -->
-    <Component Id="FirewallRule" Directory="INSTALLFOLDER">
-      <fire:FirewallRule Id="FichaCostoPort5000"
-                         Name="FichaCosto Service (Port 5000)"
-                         Port="5000"
-                         Protocol="tcp"
-                         Profile="all" />
+    <!-- PermissionEx dentro de CreateFolder con GUID explícito -->
+    <Component Id="LogsPermissions" Directory="LOGSFOLDER" Guid="{ac931d75-699b-4fa9-839a-dcc9bcf04529}">
+      <CreateFolder>
+        <util:PermissionEx User="NT AUTHORITY\SYSTEM" GenericAll="yes" />
+        <util:PermissionEx User="BUILTIN\Administrators" GenericAll="yes" />
+      </CreateFolder>
     </Component>
 
   </Package>

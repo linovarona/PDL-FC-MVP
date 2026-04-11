@@ -8,7 +8,7 @@
 
 param(
     [string]$InstallPath = "C:\Program Files\FichaCostoService",
-    [string]$LogPath = "$env:TEMP\FichaCosto-PreInstall.log"
+    [string]$LogPath = "$env:TEMP\FichaCosto-Install-Logs\05-pre-install-*.log"
 )
 
 $ErrorActionPreference = "Stop"

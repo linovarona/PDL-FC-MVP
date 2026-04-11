@@ -135,7 +135,37 @@ try {
     Write-Warning "Error inicializando base de datos: $_"
 }
 
-# 3. CONFIGURAR FIREWALL (opcional, para acceso remoto)
+# 3. Verificar Base de Datos (CORREGIDO)
+Write-Host "`n[3/4] Verificando Base de Datos..." -ForegroundColor Yellow
+if (Test-Path $dbPath) {
+    $dbSize = (Get-Item $dbPath).Length / 1KB
+    Write-Host "  ✅ Base de datos existe: $dbPath ($([math]::Round($dbSize,2)) KB)" -ForegroundColor Green
+    
+    # Verificar si tiene datos usando Microsoft.Data.Sqlite
+    try {
+        Add-Type -Path "$installDir\Microsoft.Data.Sqlite.dll" -ErrorAction Stop
+        $conn = New-Object Microsoft.Data.Sqlite.SqliteConnection("Data Source=$dbPath")
+        $conn.Open()
+        $cmd = $conn.CreateCommand()
+        $cmd.CommandText = "SELECT COUNT(*) FROM Clientes"
+        $count = $cmd.ExecuteScalar()
+        $conn.Close()
+        
+        if ($count -gt 0) {
+            Write-Host "  ✅ Base de datos poblada ($count clientes)" -ForegroundColor Green
+        } else {
+            Write-Host "  ⚠️  Base de datos VACÍA (0 clientes)" -ForegroundColor Yellow
+            Write-Host "      Ejecuta: .\seed-repair.ps1" -ForegroundColor Cyan
+        }
+    } catch {
+        Write-Host "  ⚠️  No se pudo verificar BD: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "  ❌ Base de datos no encontrada" -ForegroundColor Red
+}
+
+
+# 4. CONFIGURAR FIREWALL (opcional, para acceso remoto)
 Write-Host "`n[3/6] Configurando reglas de firewall..." -ForegroundColor Yellow
 try {
     $ruleName = "FichaCosto Service - Puerto $ServicePort"
@@ -157,7 +187,7 @@ try {
     Write-Warning "No se pudo configurar firewall: $_"
 }
 
-# 4. VERIFICAR SERVICIO
+# 5. VERIFICAR SERVICIO
 Write-Host "`n[4/6] Verificando estado del servicio..." -ForegroundColor Yellow
 $service = Get-Service -Name "FichaCostoService" -ErrorAction SilentlyContinue
 
@@ -180,7 +210,7 @@ if ($service) {
     Write-Error "  ✗ Servicio no encontrado"
 }
 
-# 5. VERIFICAR ENDPOINT HTTP
+# 6. VERIFICAR ENDPOINT HTTP
 Write-Host "`n[5/6] Verificando endpoint HTTP..." -ForegroundColor Yellow
 $maxRetries = 15
 $retry = 0
@@ -206,7 +236,7 @@ if (-not $success) {
     Write-Warning "  ⚠ No se pudo verificar endpoint HTTP. El servicio podria estar iniciando."
 }
 
-# 6. RESUMEN FINAL Y DIAGNOSTICO
+# 7. RESUMEN FINAL Y DIAGNOSTICO
 
 # Función helper para verificar permisos (agregar al inicio del script o antes del resumen)
 function Test-PermissionStatus {
