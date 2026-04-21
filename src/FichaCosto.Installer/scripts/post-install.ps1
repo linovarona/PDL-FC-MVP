@@ -1,302 +1,197 @@
 ﻿#Requires -RunAsAdministrator
 <#
 .SYNOPSIS
-    Post-instalación: Configuración adicional y verificación
+    Post-instalación FichaCosto MVP v0.6.2
 .DESCRIPTION
-    Configura permisos, inicializa base de datos y verifica el servicio
+    Configura firewall, permisos y ejecuta seed de datos vía API REST.
+    No carga SQLite directamente - evita bloqueos de archivo.
 #>
-
 param(
     [string]$InstallPath = "C:\Program Files\FichaCostoService",
-    [string]$LogDir = "$env:TEMP\FichaCosto-PostInstall",
-    [int]$ServicePort = 5000
+    [string]$DataPath = "C:\ProgramData\FichaCosto",
+    [int]$ServicePort = 5000,
+    [string]$ServiceName = "FichaCostoService",
+    [int]$MaxRetries = 30,
+    [int]$RetryDelaySeconds = 2
 )
 
 $ErrorActionPreference = "Stop"
-New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
-$LogFile = "$LogDir\post-install.log"
-Start-Transcript -Path $LogFile -Force
+$LogFile = "$env:Temp\FichaCosto-Install-Logs\post-install-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+$ServiceUrl = "http://localhost:$ServicePort"
 
-Write-Host "=== FICHA COSTO SERVICE - POST-INSTALACION ===" -ForegroundColor Cyan
+function Write-Log {
+    param([string]$Message, [ValidateSet("INFO","SUCCESS","WARNING","ERROR")][string]$Level = "INFO")
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logEntry = "[$timestamp] [$Level] $Message"
+    $logDir = Split-Path $LogFile
+    if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+    Add-Content -Path $LogFile -Value $logEntry
+    switch ($Level) {
+        "SUCCESS" { Write-Host $logEntry -ForegroundColor Green }
+        "WARNING" { Write-Host $logEntry -ForegroundColor Yellow }
+        "ERROR"   { Write-Host $logEntry -ForegroundColor Red }
+        default   { Write-Host $logEntry }
+    }
+}
 
-# 1. CONFIGURAR PERMISOS DE LOGS
-Write-Host "`n[1/6] Configurando permisos de Logs..." -ForegroundColor Yellow
-$logsPath = Join-Path $InstallPath "Logs"
+Write-Log "=== Post-instalación FichaCosto MVP v0.6.2 ==="
+Write-Log "Service URL: $ServiceUrl"
+Write-Log "Data Path: $DataPath"
 
+# 1. FIREWALL
+Write-Log "Configurando regla de firewall para puerto $ServicePort..."
 try {
-    # Crear directorio si no existe (por si acaso)
-    if (-not (Test-Path $logsPath)) {
-        New-Item -ItemType Directory -Path $logsPath -Force | Out-Null
-        Write-Host "  ✓ Directorio Logs creado" -ForegroundColor Green
-    }
-
-    # Configurar permisos para LocalSystem (NT AUTHORITY\SYSTEM)
-    $acl = Get-Acl $logsPath
-    
-    # Remover permisos heredados problemáticos
-    $acl.SetAccessRuleProtection($true, $false)
-    
-    # Agregar permiso para SYSTEM (FullControl)
-    $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-        "NT AUTHORITY\SYSTEM",
-        "FullControl",
-        "ContainerInherit,ObjectInherit",
-        "None",
-        "Allow"
-    )
-    $acl.AddAccessRule($systemRule)
-    
-    # Agregar permiso para Administradores
-    $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-        "BUILTIN\Administrators",
-        "FullControl",
-        "ContainerInherit,ObjectInherit",
-        "None",
-        "Allow"
-    )
-    $acl.AddAccessRule($adminRule)
-    
-    Set-Acl $logsPath $acl
-    
-    # Crear archivo de prueba para verificar escritura
-    $testFile = Join-Path $logsPath "install-test.log"
-    "Log de instalacion - $(Get-Date)" | Out-File -FilePath $testFile -Force
-    
-    Write-Host "  ✓ Permisos configurados correctamente" -ForegroundColor Green
-    Write-Host "    - SYSTEM: FullControl" -ForegroundColor Gray
-    Write-Host "    - Administrators: FullControl" -ForegroundColor Gray
+    $ruleName = "FichaCosto Service (TCP $ServicePort)"
+    Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+    New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -LocalPort $ServicePort `
+        -Protocol TCP -Action Allow -Profile Any -Enabled True | Out-Null
+    Write-Log "Firewall configurado" "SUCCESS"
 } catch {
-    Write-Warning "Error configurando permisos de Logs: $_"
+    Write-Log "ERROR Firewall: $($_.Exception.Message)" "ERROR"
 }
 
-# 2. INICIALIZAR BASE DE DATOS SQLITE
-Write-Host "`n[2/6] Inicializando base de datos SQLite..." -ForegroundColor Yellow
-$dataPath = Join-Path $InstallPath "Data"
-$dbPath = Join-Path $dataPath "fichacosto.db"
-$schemaPath = Join-Path $dataPath "Schema.sql"
-
+# 2. PERMISOS DE CARPETAS
+Write-Log "Configurando permisos de carpetas..."
 try {
-    if (-not (Test-Path $dataPath)) {
-        New-Item -ItemType Directory -Path $dataPath -Force | Out-Null
-    }
-
-    # Configurar permisos para Data (similar a Logs)
-    $acl = Get-Acl $dataPath
-    $acl.SetAccessRuleProtection($true, $false)
+    $logsFolder = Join-Path $DataPath "Logs"
+    $dbFolder = Join-Path $DataPath "Data"
     
-    $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-        "NT AUTHORITY\SYSTEM", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow"
-    )
-    $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-        "BUILTIN\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow"
-    )
-  #  $acl.AddAccessRule($systemRule)
-  #  $acl.AddAccessRule($adminRule)
-  #  Set-Acl $dataPath $acl
-
-    # Crear base de datos vacía si no existe Schema.sql o si queremos crearla
-    if (Test-Path $schemaPath) {
-        Write-Host "  ℹ Schema.sql encontrado" -ForegroundColor Gray
+    New-Item -ItemType Directory -Path $logsFolder -Force | Out-Null
+    New-Item -ItemType Directory -Path $dbFolder -Force | Out-Null
+    
+    $system = New-Object System.Security.Principal.SecurityIdentifier "S-1-5-18"
+    $admins = New-Object System.Security.Principal.SecurityIdentifier "S-1-5-32-544"
+    
+    foreach ($folder in @($logsFolder, $dbFolder)) {
+        $acl = Get-Acl $folder
+        $acl.SetAccessRuleProtection($true, $false)
         
-        # Verificar si sqlite3 está disponible
-        $sqlite = Get-Command sqlite3 -ErrorAction SilentlyContinue
+        $ruleSystem = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $system, "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+        $acl.AddAccessRule($ruleSystem)
         
-        if ($sqlite -and -not (Test-Path $dbPath)) {
-            # Crear BD desde schema
-            & sqlite3 $dbPath ".read $schemaPath"
-            Write-Host "  ✓ Base de datos creada desde Schema.sql" -ForegroundColor Green
-        } elseif (-not (Test-Path $dbPath)) {
-            # Crear archivo vacío para que la app lo inicialice
-            New-Item -ItemType File -Path $dbPath -Force | Out-Null
-            "SQLite format 3" | Out-File -FilePath $dbPath -Encoding utf8
-            Write-Host "  ✓ Archivo de base de datos creado (para inicializacion por aplicacion)" -ForegroundColor Green
-        } else {
-            Write-Host "  ℹ Base de datos ya existe" -ForegroundColor Gray
-        }
-    } else {
-        # Crear BD vacía si no hay schema
-        if (-not (Test-Path $dbPath)) {
-            New-Item -ItemType File -Path $dbPath -Force | Out-Null
-            Write-Host "  ✓ Archivo de base de datos creado" -ForegroundColor Green
-        }
+        $ruleAdmin = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $admins, "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+        $acl.AddAccessRule($ruleAdmin)
+        
+        Set-Acl $folder $acl
     }
-    
-    # Configurar permisos específicos para el archivo de BD
-    if (Test-Path $dbPath) {
-        $acl = Get-Acl $dbPath
-        $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-            "NT AUTHORITY\SYSTEM", "FullControl", "None", "None", "Allow"
-        )
-        $acl.AddAccessRule($systemRule)
-        Set-Acl $dbPath $acl
-    }
-    
+    Write-Log "Permisos configurados" "SUCCESS"
 } catch {
-    Write-Warning "Error inicializando base de datos: $_"
+    Write-Log "ERROR Permisos: $($_.Exception.Message)" "ERROR"
 }
 
-# 3. Verificar Base de Datos (CORREGIDO)
-Write-Host "`n[3/4] Verificando Base de Datos..." -ForegroundColor Yellow
-if (Test-Path $dbPath) {
-    $dbSize = (Get-Item $dbPath).Length / 1KB
-    Write-Host "  ✅ Base de datos existe: $dbPath ($([math]::Round($dbSize,2)) KB)" -ForegroundColor Green
-    
-    # Verificar si tiene datos usando Microsoft.Data.Sqlite
-    try {
-        Add-Type -Path "$installDir\Microsoft.Data.Sqlite.dll" -ErrorAction Stop
-        $conn = New-Object Microsoft.Data.Sqlite.SqliteConnection("Data Source=$dbPath")
-        $conn.Open()
-        $cmd = $conn.CreateCommand()
-        $cmd.CommandText = "SELECT COUNT(*) FROM Clientes"
-        $count = $cmd.ExecuteScalar()
-        $conn.Close()
-        
-        if ($count -gt 0) {
-            Write-Host "  ✅ Base de datos poblada ($count clientes)" -ForegroundColor Green
-        } else {
-            Write-Host "  ⚠️  Base de datos VACÍA (0 clientes)" -ForegroundColor Yellow
-            Write-Host "      Ejecuta: .\seed-repair.ps1" -ForegroundColor Cyan
-        }
-    } catch {
-        Write-Host "  ⚠️  No se pudo verificar BD: $($_.Exception.Message)" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host "  ❌ Base de datos no encontrada" -ForegroundColor Red
-}
-
-
-# 4. CONFIGURAR FIREWALL (opcional, para acceso remoto)
-Write-Host "`n[3/6] Configurando reglas de firewall..." -ForegroundColor Yellow
+# 3. INICIAR SERVICIO
+Write-Log "Iniciando servicio '$ServiceName'..."
 try {
-    $ruleName = "FichaCosto Service - Puerto $ServicePort"
-    $existingRule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
-    
-    if (-not $existingRule) {
-        New-NetFirewallRule -DisplayName $ruleName `
-            -Direction Inbound `
-            -Protocol TCP `
-            -LocalPort $ServicePort `
-            -Action Allow `
-            -Profile Any `
-            -Description "Permitir acceso al FichaCosto Service" | Out-Null
-        Write-Host "  ✓ Regla de firewall creada para puerto $ServicePort" -ForegroundColor Green
-    } else {
-        Write-Host "  ℹ Regla de firewall ya existe" -ForegroundColor Gray
-    }
-} catch {
-    Write-Warning "No se pudo configurar firewall: $_"
-}
-
-# 5. VERIFICAR SERVICIO
-Write-Host "`n[4/6] Verificando estado del servicio..." -ForegroundColor Yellow
-$service = Get-Service -Name "FichaCostoService" -ErrorAction SilentlyContinue
-
-if ($service) {
-    Write-Host "  Estado del servicio: $($service.Status)" -ForegroundColor $(if($service.Status -eq 'Running'){'Green'}else{'Yellow'})
-    
+    $service = Get-Service -Name $ServiceName -ErrorAction Stop
     if ($service.Status -ne 'Running') {
-        Write-Host "  Intentando iniciar servicio..." -ForegroundColor Yellow
-        Start-Service -Name "FichaCostoService" -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 3
-        $service.Refresh()
-        
-        if ($service.Status -eq 'Running') {
-            Write-Host "  ✓ Servicio iniciado correctamente" -ForegroundColor Green
-        } else {
-            Write-Warning "  ⚠ No se pudo iniciar el servicio. Verificar Event Viewer."
-        }
+        Start-Service -Name $ServiceName
     }
-} else {
-    Write-Error "  ✗ Servicio no encontrado"
+    Write-Log "Servicio iniciado" "SUCCESS"
+} catch {
+    Write-Log "ERROR Servicio: $($_.Exception.Message)" "ERROR"
+    exit 1
 }
 
-# 6. VERIFICAR ENDPOINT HTTP
-Write-Host "`n[5/6] Verificando endpoint HTTP..." -ForegroundColor Yellow
-$maxRetries = 15
-$retry = 0
-$success = $false
+# 4. ESPERAR SERVICIO DISPONIBLE
+Write-Log "Esperando servicio disponible (máx $MaxRetries intentos)..."
+$serviceReady = $false
 
-while ($retry -lt $maxRetries -and -not $success) {
+for ($i = 1; $i -le $MaxRetries; $i++) {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:$ServicePort/swagger" -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "$ServiceUrl/api/health" -TimeoutSec 5 -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
-            $success = $true
-            Write-Host "  ✓ Swagger UI accesible en http://localhost:$ServicePort/swagger" -ForegroundColor Green
+            $serviceReady = $true
+            Write-Log "Servicio respondiendo (intento $i)" "SUCCESS"
+            break
         }
-    } catch {
-        $retry++
-        if ($retry -lt $maxRetries) {
-            Write-Host "  Esperando respuesta del servicio... ($retry/$maxRetries)" -ForegroundColor Gray
-            Start-Sleep -Seconds 2
-        }
+    }
+    catch {
+        Write-Log "Intento $i/$MaxRetries - esperando..."
+        Start-Sleep -Seconds $RetryDelaySeconds
     }
 }
 
-if (-not $success) {
-    Write-Warning "  ⚠ No se pudo verificar endpoint HTTP. El servicio podria estar iniciando."
+if (-not $serviceReady) {
+    Write-Log "ERROR: Servicio no disponible después de $MaxRetries intentos" "ERROR"
+    exit 1
 }
 
-# 7. RESUMEN FINAL Y DIAGNOSTICO
-
-# Función helper para verificar permisos (agregar al inicio del script o antes del resumen)
-function Test-PermissionStatus {
-    param([string]$Path)
-    try {
-        $acl = Get-Acl $Path -ErrorAction Stop
-        $hasSystem = $acl.Access | Where-Object { $_.IdentityReference -match "SYSTEM|S-1-5-18" } | Select-Object -First 1
-        if ($hasSystem) { return "OK" } else { return "REVISION REQUERIDA" }
-    } catch {
-        return "ERROR"
+# 5. VERIFICAR SI YA TIENE DATOS
+Write-Log "Verificando estado de base de datos..."
+try {
+    $checkResponse = Invoke-WebRequest -Uri "$ServiceUrl/api/admin/check-data" -TimeoutSec 10
+    $checkData = $checkResponse.Content | ConvertFrom-Json
+    
+    if ($checkData.hasData) {
+        Write-Log "Base de datos ya contiene datos ($($checkData.clientes) clientes). Omitiendo seed." "SUCCESS"
+        exit 0
     }
+    Write-Log "Base de datos vacía. Ejecutando seed..." "INFO"
+}
+catch {
+    Write-Log "No se pudo verificar datos, intentando seed de todas formas..." "WARNING"
 }
 
+# 6. EJECUTAR SEED VIA API
+Write-Log "Ejecutando seed de datos vía API..."
+$seedBody = @{
+    Clientes = @(
+        @{
+            NombreEmpresa = "Mercado Demo 'El Portal' S.R.L."
+            CUIT = "30123456789"
+            Direccion = "Av. Corrientes 1234, CABA"
+            ContactoNombre = "Carlos Rodríguez"
+            ContactoEmail = "admin@elportal.com.ar"
+            ContactoTelefono = "011-4567-8900"
+        }
+    )
+    Productos = @(
+        @{
+            ClienteId = 1
+            Codigo = "CAF-001"
+            Nombre = "Café Espresso Doble"
+            Descripcion = "Café de especialidad, 60ml, doble extracción"
+            UnidadMedida = 5
+        }
+    )
+} | ConvertTo-Json -Depth 3
 
-Write-Host "`n[6/6] Generando resumen de instalacion..." -ForegroundColor Yellow
-
-$summary = @"
-=== RESUMEN DE INSTALACION ===
-Fecha: $(Get-Date)
-Ruta de instalacion: $InstallPath
-
-ESTRUCTURA DE DIRECTORIOS:
-$(Get-ChildItem $InstallPath -Recurse | Select-Object FullName, Length | Format-Table -AutoSize | Out-String)
-
-ESTADO DEL SERVICIO:
-$(Get-Service FichaCostoService | Select-Object Name, Status, StartType | Format-Table | Out-String)
-
-PERMISOS DE CARPETAS CRITICAS:
-$logsStatus = Test-PermissionStatus (Join-Path $InstallPath "Logs")
-$dataStatus = Test-PermissionStatus (Join-Path $InstallPath "Data")
-
-
-URL DE ACCESO:
-http://localhost:$ServicePort/swagger
-
-LOGS DEL SISTEMA:
-$(Get-WinEvent -FilterHashtable @{LogName='Application'; ProviderName='FichaCostoService'} -MaxEvents 5 -ErrorAction SilentlyContinue | Select-Object TimeCreated, LevelDisplayName, Message | Format-Table -Wrap | Out-String)
-
-DIAGNOSTICO:
-- Servicio: $(if($service.Status -eq 'Running'){'✓ Operativo'}else{'✗ No ejecutandose'})
-- Logs: $(if(Test-Path (Join-Path $InstallPath "Logs\install-test.log")){'✓ Escritura verificada'}else{'✗ Sin permisos de escritura'})
-- BD: $(if(Test-Path (Join-Path $InstallPath "Data\fichacosto.db")){'✓ Base de datos creada'}else{'✗ No inicializada'})
-- HTTP: $(if($success){'✓ Endpoint responde'}else{'? Verificacion pendiente'})
-"@
-
-$summary | Out-File -FilePath "$LogDir\resumen-instalacion.txt" -Force
-Write-Host $summary -ForegroundColor Cyan
-
-Write-Host "`n=== POST-INSTALACION COMPLETADA ===" -ForegroundColor Cyan
-Write-Host "Para diagnosticos futuros, revisar:" -ForegroundColor Gray
-Write-Host "  - Logs de instalacion: $LogDir" -ForegroundColor Gray
-Write-Host "  - Event Viewer: Aplicacion > FichaCostoService" -ForegroundColor Gray
-Write-Host "  - Archivos de log: $(Join-Path $InstallPath 'Logs')" -ForegroundColor Gray
-
-Stop-Transcript
-
-# Retornar estado para automatizacion
-return @{
-    ServiceRunning = ($service.Status -eq 'Running')
-    HttpAccessible = $success
-    LogsWritable = Test-Path (Join-Path $InstallPath "Logs\install-test.log")
-    DatabaseExists = Test-Path (Join-Path $InstallPath "Data\fichacosto.db")
+try {
+    $seedResponse = Invoke-WebRequest -Uri "$ServiceUrl/api/admin/seed" `
+        -Method POST `
+        -ContentType "application/json" `
+        -Body $seedBody `
+        -TimeoutSec 30
+    
+    $seedResult = $seedResponse.Content | ConvertFrom-Json
+    Write-Log "Seed ejecutado: $($seedResult.message)" "SUCCESS"
 }
+catch {
+    Write-Log "ERROR en seed: $($_.Exception.Message)" "ERROR"
+    Write-Log "El servicio funciona pero sin datos de ejemplo." "WARNING"
+    Write-Log "Use Swagger UI ($ServiceUrl/swagger) para crear datos manualmente." "INFO"
+}
+
+# 7. VERIFICACIÓN FINAL
+Write-Log "Verificación final..."
+try {
+    $finalCheck = Invoke-WebRequest -Uri "$ServiceUrl/api/admin/check-data" -TimeoutSec 5
+    $finalData = $finalCheck.Content | ConvertFrom-Json
+    Write-Log "Verificación: $($finalData.clientes) clientes en base de datos" "SUCCESS"
+}
+catch {
+    Write-Log "No se pudo verificar datos finales" "WARNING"
+}
+
+# 8. ELIMINAR FLAG SI EXISTE
+$flagFile = Join-Path $DataPath "Data\.seed-required"
+if (Test-Path $flagFile) {
+    Remove-Item $flagFile -Force
+    Write-Log "Flag de seed eliminado" "SUCCESS"
+}
+
+Write-Log "=== Post-instalación completada ===" "SUCCESS"
+Write-Log "Acceso: $ServiceUrl/swagger" "INFO"
+Write-Log "Log: $LogFile" "INFO"

@@ -14,7 +14,8 @@ Write-Host "=== 02. PUBLICACIÓN DEL SERVICIO (x64) ===" -ForegroundColor Cyan
 
 $basePath = "D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP"
 $projectPath = "$basePath\src\FichaCosto.Service\FichaCosto.Service.csproj"
-$publishPath = "$basePath\src\FichaCosto.Service\bin\$Configuration\net9.0\win-x64\publish"
+$publishPath = #"C:\Program Files\FichaCostoService"
+"$basePath\src\FichaCosto.Service\bin\$Configuration\net9.0\win-x64\publish"
 
 Write-Host "Configuración: $Configuration"
 Write-Host "Ruta publish: $publishPath`n"
@@ -49,6 +50,7 @@ $criticalFiles = @(
     "FichaCosto.Service.dll",
     "Microsoft.Data.Sqlite.dll",  # <-- CAMBIO: Era System.Data.SQLite.dll
     "e_sqlite3.dll"               # <-- Native library de SQLitePCLRaw
+
 )
 
 $allFound = $true
@@ -71,6 +73,16 @@ if (Test-Path $nativePath) {
     Write-Host "  ⚠️  e_sqlite3.dll no encontrado - la BD podría no funcionar" -ForegroundColor Yellow
 }
 
+# En publisher.ps1, agregar verificación:
+$adminController = Join-Path $ProjectRoot "src\FichaCosto.Service\Controllers\AdminController.cs"
+if (-not (Test-Path $adminController)) {
+    Write-Error "ERROR CRITICO: AdminController.cs no encontrado en $adminController"
+    exit 1
+}
+Write-Host "✓ AdminController.cs encontrado" -ForegroundColor Green
+
+
+
 # Copiar archivos de datos SQL
 Write-Host "`n[4/4] Copiando archivos de datos..." -ForegroundColor Yellow
 $dataPath = "$publishPath\Data"
@@ -87,6 +99,10 @@ foreach ($sql in $sqlFiles) {
         Write-Host "  ❌ No encontrado: $source" -ForegroundColor Red
     }
 }
+
+
+
+
 
 # Listar contenido final
 Write-Host "`n=== CONTENIDO DE PUBLICACIÓN ===" -ForegroundColor Cyan

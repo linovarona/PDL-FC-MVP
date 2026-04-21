@@ -1,80 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
-     xmlns:fire="http://wixtoolset.org/schemas/v4/wxs/firewall">
-
-  <Package Name="FichaCosto Service MVP"
-           Language="1033"
-           Version="0.6.2"
-           Manufacturer="PyMEs Dev Solutions"
-           UpgradeCode="f8f3bd79-de8c-45a0-96a3-576edd3ab121"
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" 
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  
+  <Package Name="FichaCosto Service" 
+           Language="1033" 
+           Version="0.6.2" 
+           Manufacturer="PDL" 
+           UpgradeCode="7a40714b-cf06-4196-9cf8-f7f8065efe89" 
            Scope="perMachine">
     
-    <MajorUpgrade DowngradeErrorMessage="Una versión posterior ya está instalada." />
+    <MajorUpgrade DowngradeErrorMessage="Una versión anterior ya está instalada." />
     <MediaTemplate EmbedCab="yes" />
-
+    
+    <!-- Feature principal -->
+    <Feature Id="ProductFeature" Title="FichaCosto Service" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="ServiceComponents" />
+    </Feature>
+    
+    <!-- Estructura de carpetas -->
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="FichaCostoService">
-        <Directory Id="DATAFOLDER" Name="Data" />
+      <Directory Id="INSTALLFOLDER" Name="FichaCosto" />
+    </StandardDirectory>
+    
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DATAFOLDER" Name="FichaCosto">
         <Directory Id="LOGSFOLDER" Name="Logs" />
+        <Directory Id="DBFOLDER" Name="Data" />
       </Directory>
     </StandardDirectory>
-
-    <Feature Id="MainFeature" Title="FichaCosto Service" Level="1">
-      <ComponentGroupRef Id="ServiceComponents" />
-      <ComponentGroupRef Id="DatabaseComponents" />
-      <ComponentRef Id="LogsPermissions" />
-    </Feature>
-
+    
+  </Package>
+  
+  <!-- Componentes de archivos del servicio -->
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="ServiceExecutable" Guid="212552A1-FD90-43DD-ACB8-2CB3367E8A17">
+        <File Id="FichaCostoExe" 
+              Source="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Service\bin\Release\net9.0\win-x64\publish\FichaCosto.Service.exe" 
+              KeyPath="yes" />
+      </Component>
+      <!-- Incluir todos los DLLs necesarios incluyendo e_sqlite3.dll -->
+      <Component Id="SQLiteNative" Guid="3AC9D528-3D7D-4FB5-A067-DB74A4731094">
+        <File Id="e_sqlite3dll" 
+              Source="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Service\bin\Release\net9.0\win-x64\publish\e_sqlite3.dll" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+  
+  <!-- Componentes de servicio Windows y carpetas de datos -->
+  <Fragment>
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
-      <Component>
-        <File Source="$(var.PublishDir)\FichaCosto.Service.exe" KeyPath="yes" />
-        
-        <!-- CORREGIDO: FirewallRule DENTRO de ServiceInstall -->
-        <ServiceInstall Id="FichaCostoService"
-                        Name="FichaCostoService"
-                        DisplayName="FichaCosto Service MVP"
-                        Description="Servicio de automatización de fichas de costo para PyMEs"
-                        Start="auto"
-                        Type="ownProcess"
-                        ErrorControl="normal"
-                        Account="NT AUTHORITY\LocalService">
-          <fire:FirewallRule Id="FichaCostoPort5000"
-                             Name="FichaCosto Service (Port 5000)"
-                             Port="5000"
-                             Protocol="tcp"
-                             Profile="all" />
+      <!-- Instalación del servicio -->
+      <Component Id="ServiceInstaller" Guid="E0A3B45E-1667-4DB1-9DB2-83DE25F59EFB">
+        <ServiceInstall Id="FichaCostoService" 
+                        Name="FichaCostoService" 
+                        DisplayName="FichaCosto Service" 
+                        Description="Servicio de cálculo de fichas de costo" 
+                        Start="auto" 
+                        Type="ownProcess" 
+                        ErrorControl="normal" 
+                        Account="NT AUTHORITY\SYSTEM">
+          <ServiceDependency Id="http" />
         </ServiceInstall>
-        
         <ServiceControl Id="StartService" 
-                      Name="FichaCostoService" 
-                      Start="install" 
-                      Stop="both" 
-                      Remove="uninstall" />
+                        Name="FichaCostoService" 
+                        Start="install" 
+                        Stop="both" 
+                        Remove="uninstall" />
       </Component>
       
-      <Component><File Source="$(var.PublishDir)\FichaCosto.Service.dll" /></Component>
-      <Component><File Source="$(var.PublishDir)\FichaCosto.Service.deps.json" /></Component>
-      <Component><File Source="$(var.PublishDir)\FichaCosto.Core.dll" /></Component>
-      <Component><File Source="$(var.PublishDir)\FichaCosto.Infrastructure.dll" /></Component>
-      <Component><File Source="$(var.PublishDir)\Microsoft.Data.Sqlite.dll" /></Component>
-      <Component><File Source="$(var.PublishDir)\e_sqlite3.dll" /></Component>
-    </ComponentGroup>
-
-    <ComponentGroup Id="DatabaseComponents" Directory="DATAFOLDER">
-      <Component>
-        <File Source="$(var.PublishDir)\Data\Schema.sql" />
-        <File Source="$(var.PublishDir)\Data\SeedData.sql" />
+      <!-- Creación de carpetas de datos (sin PermissionEx por ahora) -->
+      <Component Id="DataFolderComponent" Directory="DATAFOLDER" Guid="0AAC2146-5A72-4A50-90E2-ABA59DE750CD">
+        <CreateFolder />
+      </Component>
+      <Component Id="LogsFolderComponent" Directory="LOGSFOLDER" Guid="FBC3C24E-B172-4B28-A501-204116B72289">
+        <CreateFolder />
+      </Component>
+      <Component Id="DBFolderComponent" Directory="DBFOLDER" Guid="52859244-31bb-4747-9cce-ffb3db0be43f">
+        <CreateFolder />
       </Component>
     </ComponentGroup>
-
-    <!-- PermissionEx dentro de CreateFolder con GUID explícito -->
-    <Component Id="LogsPermissions" Directory="LOGSFOLDER" Guid="{ac931d75-699b-4fa9-839a-dcc9bcf04529}">
-      <CreateFolder>
-        <util:PermissionEx User="NT AUTHORITY\SYSTEM" GenericAll="yes" />
-        <util:PermissionEx User="BUILTIN\Administrators" GenericAll="yes" />
-      </CreateFolder>
-    </Component>
-
-  </Package>
+  </Fragment>
+  
 </Wix>

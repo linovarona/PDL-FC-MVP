@@ -6,11 +6,10 @@ using FichaCosto.Service.Services.Implementations;
 using FichaCosto.Service.Services.Interfaces;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Serilog;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ========== CONFIGURACION SERILOG ==========
+// ========== CONFIGURACIÓN SERILOG ==========
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -18,7 +17,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// ========== DETECCION WINDOWS SERVICE ==========
+// ========== DETECCIÓN WINDOWS SERVICE ==========
 if (WindowsServiceHelpers.IsWindowsService())
 {
     builder.Host.UseWindowsService(options =>
@@ -29,7 +28,7 @@ if (WindowsServiceHelpers.IsWindowsService())
 }
 
 // ========== SERVICIOS MVC ==========
-builder.Services.AddControllers().AddApplicationPart(Assembly.GetExecutingAssembly()); // <-- AGREGAR ESTO;
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -42,10 +41,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // ========== REPOSITORIES & DATABASE ==========
+// SIEMPRE registramos la factory estándar
 builder.Services.AddSingleton<IConnectionFactory, SqliteConnectionFactory>();
+
+// DatabaseInitializer detecta automáticamente si es test por IHostEnvironment
 builder.Services.AddSingleton<DatabaseInitializer>();
 
-// Otros servicios
+// Otros servicios...
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IFichaRepository, FichaRepository>();
@@ -55,20 +57,11 @@ builder.Services.AddScoped<IExcelService, ExcelService>();
 
 var app = builder.Build();
 
-// ========== INICIALIZACION BASE DE DATOS ==========
-try
+// ========== INICIALIZACIÓN BASE DE DATOS ==========
+using (var scope = app.Services.CreateScope())
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
-        await initializer.InitializeAsync();
-        Log.Information("DatabaseInitializer completado exitosamente");
-    }
-}
-catch (Exception ex)
-{
-    Log.Fatal(ex, "FALLA CRITICA: No se pudo inicializar la base de datos");
-    // Continuar para permitir diagnostico via API
+    var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
+    await initializer.InitializeAsync();
 }
 
 // ========== MIDDLEWARE ==========
@@ -80,27 +73,10 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseAuthorization();
+app.MapControllers();
 
-// LOGGING: Listar todos los endpoints registrados
-Log.Information("=== ENDPOINTS REGISTRADOS ===");
-foreach (var endpoint in app.Services.GetRequiredService<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorCollectionProvider>()
-    .ActionDescriptors.Items)
-{
-    if (endpoint is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor controllerAction)
-    {
-        Log.Information("Controller: {Controller}, Action: {Action}, Route: {Route}",
-            controllerAction.ControllerName,
-            controllerAction.ActionName,
-            controllerAction.AttributeRouteInfo?.Template ?? "N/A");
-    }
-}
-Log.Information("=== FIN ENDPOINTS ===");
-
-app.MapControllers(); // <-- IMPORTANTE: Mapea AdminController y otros controllers
-
-// Health Check endpoint (tambien disponible en AdminController)
-app.MapGet("/api/health", () => new
-{
+// Health Check
+app.MapGet("/api/health", () => new {
     status = "OK",
     timestamp = DateTime.UtcNow,
     version = "v1.0.0-MVP",
@@ -115,7 +91,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Fallo critico al iniciar el servicio");
+    Log.Fatal(ex, "Fallo crítico al iniciar el servicio");
     throw;
 }
 finally

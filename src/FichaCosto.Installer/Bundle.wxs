@@ -11,7 +11,7 @@
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication 
         Theme="rtfLargeLicense"
-        LicenseFile="license.rtf"
+        LicenseFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\license.rtf"
         ShowVersion="yes" />
     </BootstrapperApplication>
 
@@ -40,28 +40,28 @@
     <Chain>
       <ExePackage Id="NetRuntime" 
                   DisplayName="Microsoft .NET 9.0 Runtime (x64)"
-                  SourceFile="dotnet-runtime-9.0.3-win-x64.exe"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\dotnet-runtime-9.0.3-win-x64.exe"
                   InstallArguments="/quiet /norestart"
                   DetectCondition="NetRuntimeInstalled"
                   Permanent="yes" />
 
       <ExePackage Id="AspNetRuntime"
                   DisplayName="Microsoft ASP.NET Core 9.0 Runtime (x64)"
-                  SourceFile="aspnetcore-runtime-9.0.3-win-x64.exe"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\aspnetcore-runtime-9.0.3-win-x64.exe"
                   InstallArguments="/quiet /norestart"
                   DetectCondition="AspNetRuntimeInstalled"
                   Permanent="yes" />
 
       <ExePackage Id="DesktopRuntime"
                   DisplayName="Microsoft Windows Desktop Runtime 9.0 (x64)"
-                  SourceFile="windowsdesktop-runtime-9.0.3-win-x64.exe"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\windowsdesktop-runtime-9.0.3-win-x64.exe"
                   InstallArguments="/quiet /norestart"
                   DetectCondition="DesktopRuntimeInstalled"
                   Permanent="yes" />
 
       <MsiPackage Id="FichaCostoService"
                   DisplayName="FichaCosto Service MVP v0.6.2"
-                  SourceFile="FichaCostoService-Setup-v0.6.2.msi"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\FichaCostoService-Setup-v0.6.2.msi"
                   Vital="yes" />
     </Chain>
   </Bundle>

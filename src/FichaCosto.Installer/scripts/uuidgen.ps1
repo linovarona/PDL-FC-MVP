@@ -3,3 +3,6 @@
 
 
 uuidgen.exe
+
+# Generar 5 GUIDs para los componentes marcados como [GENERAR-NUEVO-GUID]
+1..5 | ForEach-Object { [guid]::NewGuid().ToString().ToUpper() }

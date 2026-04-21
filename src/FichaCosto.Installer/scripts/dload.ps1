@@ -4,7 +4,7 @@ $nugetLocal = "$basePath\NuGetLocal\packages"  # Tu estructura existente
 $offlinePath = "$basePath\offline-installer"    # Para runtimes y extras
 
 # Crear carpetas si no existen
-New-Item -ItemType Directory -Force -Path $nugetLocal, "$offlinePath\runtimes", "$offlinePath\sql" | Out-Null
+New-Item -ItemType Directory -Force -Path $nugetLocal, "$offlinePath\runtimes", "$offlinePath\sql" #| Out-Null
 
 # 1. WiX EXTENSIONS (para v6.0.2 CLI - usan versiones 4.0.6 del SDK)
 # NOTA: Con WiX CLI v6, las extensiones se instalan así:

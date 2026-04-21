@@ -1,8 +1,8 @@
 ﻿#Requires -RunAsAdministrator
 param(
-    [string]$SourceDir = $PSScriptRoot,
+    [string]$SourceDir = "D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer", #$PSScriptRoot,
     [string]$BundleName = "FichaCostoService-Bundle.exe",
-    [string]$LogDir = "$env:TEMP\06-install-*.log"
+    [string]$LogDir = "$env:TEMP\06-install-Logs"
 )
 
 $ErrorActionPreference = "Stop"
@@ -126,3 +126,14 @@ $post = Join-Path $SourceDir "post-install.ps1"
 if (Test-Path $post) {
     & $post
 }
+
+# Ejecutar post-instalación automáticamente después del MSI
+#$postInstallScript = Join-Path $PSScriptRoot "post-install.ps1"
+#if (Test-Path $postInstallScript) {
+#    Write-Host "Ejecutando configuración post-instalación..." -ForegroundColor Cyan
+#    & $postInstallScript -InstallPath "C:\Program Files\FichaCostoService" `
+#                         -DataPath "C:\ProgramData\FichaCosto" `
+#                         -ServicePort 5000
+#} else {
+#    Write-Warning "No se encontró post-install.ps1. La configuración manual será necesaria."
+#}
