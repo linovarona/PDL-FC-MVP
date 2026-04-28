@@ -11,15 +11,48 @@ using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
 // ========== CONFIGURACION SERILOG ==========
+var baseDir = AppContext.BaseDirectory;
+var isWindowsService = WindowsServiceHelpers.IsWindowsService();
+
+// Usar ProgramData para datos cuando es Windows Service (Program Files tiene permisos restrictivos)
+var dataDir = isWindowsService 
+    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "FichaCostoService")
+    : baseDir;
+
+if (!Directory.Exists(dataDir))
+{
+    Directory.CreateDirectory(dataDir);
+}
+
+var logsPath = Path.Combine(dataDir, "Logs");
+if (!Directory.Exists(logsPath))
+{
+    Directory.CreateDirectory(logsPath);
+}
+
+// Configurar connection string para usar ProgramData
+var connStr = $"Data Source={Path.Combine(dataDir, "fichacosto.db")};Cache=Shared";
+builder.Configuration["ConnectionStrings:DefaultConnection"] = connStr;
+
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
+    .MinimumLevel.Information()
     .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        Path.Combine(logsPath, "log-.txt"),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7,
+        fileSizeLimitBytes: 10485760,
+        rollOnFileSizeLimit: true,
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
+
+Log.Information("FichaCosto Service iniciando. DataDir: {DataDir}, LogsDir: {LogsDir}", dataDir, logsPath);
 
 builder.Host.UseSerilog();
 
 // ========== DETECCION WINDOWS SERVICE ==========
-if (WindowsServiceHelpers.IsWindowsService())
+if (isWindowsService)
 {
     builder.Host.UseWindowsService(options =>
     {
