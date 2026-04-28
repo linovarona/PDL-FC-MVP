@@ -12,6 +12,7 @@ public class DatabaseInitializer
     private readonly ILogger<DatabaseInitializer> _logger;
     private readonly IHostEnvironment _environment;
     private readonly string _basePath;
+    private readonly string _schemaPath;
 
     public DatabaseInitializer(
         IConnectionFactory connectionFactory,
@@ -22,6 +23,13 @@ public class DatabaseInitializer
         _logger = logger;
         _environment = environment;
         _basePath = AppContext.BaseDirectory;
+
+        _schemaPath = Path.Combine(_basePath, "Data", "Schema.sql");
+
+        if (!File.Exists(_schemaPath))
+        {
+            _schemaPath = Path.Combine(_basePath, "..", "..", "..", "Data", "Schema.sql");
+        }
     }
 
     public async Task InitializeAsync()
