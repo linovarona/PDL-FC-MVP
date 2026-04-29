@@ -7,13 +7,19 @@
 #>
 
 param(
-    [string]$InstallPath = "C:\Program Files\FichaCostoService"
+    [string]$InstallPath = "C:\Program Files\FichaCostoService",
+    [string]$DataPath = "C:\ProgramData\FichaCostoService"
 )
 
 Write-Host "=== REPARACION DE PERMISOS ===" -ForegroundColor Cyan
 
 if (-not (Test-Path $InstallPath)) {
     throw "No se encuentra la instalación en $InstallPath"
+}
+
+if (-not (Test-Path $DataPath)) {
+    Write-Warning "No se encuentra la carpeta de datos en $DataPath. Creando..."
+    New-Item -ItemType Directory -Path $DataPath -Force | Out-Null
 }
 
 # Función para reparar carpeta
@@ -57,14 +63,14 @@ function Repair-FolderPermissions {
     }
 }
 
-# Reparar Logs
-$logsOk = Repair-FolderPermissions (Join-Path $InstallPath "Logs") "Carpeta de Logs"
+# Reparar Logs (en ProgramData, no en Program Files)
+$logsOk = Repair-FolderPermissions (Join-Path $DataPath "Logs") "Carpeta de Logs (ProgramData)"
 
-# Reparar Data
-$dataOk = Repair-FolderPermissions (Join-Path $InstallPath "Data") "Carpeta de Data"
+# Reparar Data (en ProgramData, no en Program Files)
+$dataOk = Repair-FolderPermissions (Join-Path $DataPath "Data") "Carpeta de Data (ProgramData)"
 
 # Reparar archivo de BD específico si existe
-$dbPath = Join-Path $InstallPath "Data\fichacosto.db"
+$dbPath = Join-Path $DataPath "Data\fichacosto.db"
 if (Test-Path $dbPath) {
     Write-Host "`nReparando archivo de base de datos..." -ForegroundColor Yellow
     icacls $dbPath /grant "*S-1-5-18:F" 2>&1 | Out-Null

@@ -22,13 +22,19 @@ public class DatabaseInitializer
         _connectionFactory = connectionFactory;
         _logger = logger;
         _environment = environment;
-        _basePath = AppContext.BaseDirectory;
+
+        // Siempre usar ProgramData para archivos de datos (Schema.sql, SeedData.sql)
+        _basePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "FichaCostoService");
 
         _schemaPath = Path.Combine(_basePath, "Data", "Schema.sql");
 
         if (!File.Exists(_schemaPath))
         {
-            _schemaPath = Path.Combine(_basePath, "..", "..", "..", "Data", "Schema.sql");
+            // Fallback para desarrollo (cuando se ejecuta desde el directorio del proyecto)
+            var devPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "src", "FichaCosto.Service", "Data", "Schema.sql");
+            if (File.Exists(devPath)) _schemaPath = devPath;
         }
     }
 
@@ -146,12 +152,12 @@ public class DatabaseInitializer
 
     private string ResolveSchemaPath()
     {
+        // _basePath ya apunta a ProgramData\FichaCostoService
         var paths = new[]
         {
             Path.Combine(_basePath, "Data", "Schema.sql"),
-            Path.Combine(_basePath, "..", "..", "..", "Data", "Schema.sql"),
-            Path.Combine(Directory.GetCurrentDirectory(), "Data", "Schema.sql"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "src", "FichaCosto.Service", "Data", "Schema.sql")
+            Path.Combine(AppContext.BaseDirectory, "Data", "Schema.sql"), // Fallback desarrollo
+            Path.Combine(Directory.GetCurrentDirectory(), "Data", "Schema.sql") // Fallback alternativo
         };
 
         foreach (var path in paths)
@@ -159,6 +165,7 @@ public class DatabaseInitializer
             if (File.Exists(path)) return path;
         }
 
+        _logger.LogError("Schema.sql no encontrado. Rutas buscadas: {Paths}", paths);
         return paths[0];
     }
 

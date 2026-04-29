@@ -14,24 +14,21 @@ var builder = WebApplication.CreateBuilder(args);
 var baseDir = AppContext.BaseDirectory;
 var isWindowsService = WindowsServiceHelpers.IsWindowsService();
 
-// Usar ProgramData para datos cuando es Windows Service (Program Files tiene permisos restrictivos)
-var dataDir = isWindowsService 
-    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "FichaCostoService")
-    : baseDir;
-
-if (!Directory.Exists(dataDir))
-{
-    Directory.CreateDirectory(dataDir);
-}
-
+// Siempre usar ProgramData para datos (Logs, SQLite) - Program Files tiene permisos restrictivos
+var dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "FichaCostoService");
+var dbDir = Path.Combine(dataDir, "Data");
 var logsPath = Path.Combine(dataDir, "Logs");
-if (!Directory.Exists(logsPath))
+
+foreach (var dir in new[] { dataDir, dbDir, logsPath })
 {
-    Directory.CreateDirectory(logsPath);
+    if (!Directory.Exists(dir))
+    {
+        Directory.CreateDirectory(dir);
+    }
 }
 
-// Configurar connection string para usar ProgramData
-var connStr = $"Data Source={Path.Combine(dataDir, "fichacosto.db")};Cache=Shared";
+// Configurar connection string para usar ProgramData\Data
+var connStr = $"Data Source={Path.Combine(dbDir, "fichacosto.db")};Cache=Shared";
 builder.Configuration["ConnectionStrings:DefaultConnection"] = connStr;
 
 Log.Logger = new LoggerConfiguration()
@@ -47,7 +44,7 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
-Log.Information("FichaCosto Service iniciando. DataDir: {DataDir}, LogsDir: {LogsDir}", dataDir, logsPath);
+Log.Information("FichaCosto Service iniciando. DataDir: {DataDir}, LogsDir: {LogsDir}", dbDir, logsPath);
 
 builder.Host.UseSerilog();
 

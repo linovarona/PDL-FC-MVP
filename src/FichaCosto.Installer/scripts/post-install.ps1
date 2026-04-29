@@ -8,7 +8,7 @@
 #>
 param(
     [string]$InstallPath = "C:\Program Files\FichaCostoService",
-    [string]$DataPath = "C:\ProgramData\FichaCosto",
+    [string]$DataPath = "C:\ProgramData\FichaCostoService",
     [int]$ServicePort = 5000,
     [string]$ServiceName = "FichaCostoService",
     [int]$MaxRetries = 30,
