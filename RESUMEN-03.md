@@ -1,6 +1,6 @@
 ## 📄 RESUMEN-03.md
 
-```markdown
+
 # RESUMEN-03: Fase 3 - Repositorios (MVP) - COMPLETADA
 ## Proyecto PDL-FC-MVP (FichaCosto Service)
 
@@ -46,7 +46,7 @@ Implementar capa de acceso a datos con patrón Repository usando Dapper, resolvi
 | Implementación | Uso | Característica |
 |----------------|-----|----------------|
 | `SqliteConnectionFactory` | Producción | Crea conexión nueva por operación |
-| `TestConnectionFactory` | Tests | Reutiliza conexión compartida |
+| `TestConnectionFactory`   | Tests | Reutiliza conexión compartida |
 | `NonDisposableConnection` | Tests | Wrapper que ignora Dispose() |
 
 ### 4. Tests de Integración (6 tests pasando)

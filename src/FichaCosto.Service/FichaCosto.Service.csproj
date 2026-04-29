@@ -32,9 +32,19 @@
   <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
   </ItemGroup>
 	
+	<ItemGroup>
+    <!-- Asegurar que todos los .cs se compilan -->
+
+    <!-- ... -->
+  </ItemGroup>
+		
+			
   <ItemGroup>
     <None Update="Data\Schema.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+	<None Update="Data\SeedData.sql">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
   </ItemGroup>
 </Project>

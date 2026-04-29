@@ -4,52 +4,18 @@
      xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 
   <Bundle Name="FichaCosto Service MVP Bundle"
-          Version="0.6.1"
+          Version="0.6.2"
           Manufacturer="PyMEs Dev Solutions"
-          UpgradeCode="B2C3D4E5-F6A7-8901-BCDE-F12345678901">
+          UpgradeCode="a614d4d1-997c-420a-8f44-7cb79f93af84">
 
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication 
         Theme="rtfLargeLicense"
-        LicenseFile="license.rtf"
+        LicenseFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\license.rtf"
         ShowVersion="yes" />
     </BootstrapperApplication>
 
-    <Chain>
-      <!-- .NET 9.0 Runtime -->
-      <ExePackage Id="NetRuntime" 
-                  DisplayName="Microsoft .NET 9.0 Runtime"
-                  SourceFile="dotnet-runtime-9.0.3-win-x64.exe"
-                  InstallArguments="/quiet /norestart"
-                  UninstallArguments="/quiet /uninstall"
-                  DetectCondition="NetRuntimeInstalled"
-                  Permanent="yes" />
-
-      <!-- ASP.NET Core 9.0 -->
-      <ExePackage Id="AspNetRuntime"
-                  DisplayName="Microsoft ASP.NET Core 9.0 Runtime"
-                  SourceFile="aspnetcore-runtime-9.0.3-win-x64.exe"
-                  InstallArguments="/quiet /norestart"
-                  UninstallArguments="/quiet /uninstall"
-                  DetectCondition="AspNetRuntimeInstalled"
-                  Permanent="yes" />
-
-      <!-- Windows Desktop Runtime 9.0 -->
-      <ExePackage Id="DesktopRuntime"
-                  DisplayName="Microsoft Windows Desktop Runtime 9.0"
-                  SourceFile="windowsdesktop-runtime-9.0.3-win-x64.exe"
-                  InstallArguments="/quiet /norestart"
-                  UninstallArguments="/quiet /uninstall"
-                  DetectCondition="DesktopRuntimeInstalled"
-                  Permanent="yes" />
-
-      <!-- Tu MSI -->
-      <MsiPackage Id="FichaCostoService"
-                  DisplayName="FichaCosto Service MVP"
-                  SourceFile="..\..\FichaCostoService-Setup-v0.6.1.msi"
-                  Vital="yes" />
-    </Chain>
-
+    <!-- CORREGIDO: 9.0.3 en vez de 9.0.4 -->
     <util:RegistrySearch Id="NetRuntimeInstalled"
                          Root="HKLM"
                          Key="SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App"
@@ -71,5 +37,32 @@
                          Result="exists"
                          Variable="DesktopRuntimeInstalled" />
 
+    <Chain>
+      <ExePackage Id="NetRuntime" 
+                  DisplayName="Microsoft .NET 9.0 Runtime (x64)"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\dotnet-runtime-9.0.3-win-x64.exe"
+                  InstallArguments="/quiet /norestart"
+                  DetectCondition="NetRuntimeInstalled"
+                  Permanent="yes" />
+
+      <ExePackage Id="AspNetRuntime"
+                  DisplayName="Microsoft ASP.NET Core 9.0 Runtime (x64)"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\aspnetcore-runtime-9.0.3-win-x64.exe"
+                  InstallArguments="/quiet /norestart"
+                  DetectCondition="AspNetRuntimeInstalled"
+                  Permanent="yes" />
+
+      <ExePackage Id="DesktopRuntime"
+                  DisplayName="Microsoft Windows Desktop Runtime 9.0 (x64)"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\windowsdesktop-runtime-9.0.3-win-x64.exe"
+                  InstallArguments="/quiet /norestart"
+                  DetectCondition="DesktopRuntimeInstalled"
+                  Permanent="yes" />
+
+      <MsiPackage Id="FichaCostoService"
+                  DisplayName="FichaCosto Service MVP v0.6.2"
+                  SourceFile="D:\PrjSC#\PDL\FichaCosto\PDL-FC-MVP\src\FichaCosto.Installer\FichaCostoService-Setup-v0.6.2.msi"
+                  Vital="yes" />
+    </Chain>
   </Bundle>
 </Wix>

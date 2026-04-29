@@ -177,7 +177,7 @@ if ($service) {
         }
     }
 } else {
-    Write-Error "  ✗ Servicio no encontrado"
+    Write-Host  "  ✗ Servicio no encontrado"
 }
 
 # 5. VERIFICAR ENDPOINT HTTP
@@ -221,8 +221,8 @@ ESTADO DEL SERVICIO:
 $(Get-Service FichaCostoService | Select-Object Name, Status, StartType | Format-Table | Out-String)
 
 PERMISOS DE CARPETAS CRITICAS:
-Logs: $((Get-Acl (Join-Path $InstallPath "Logs")).Access | Where-Object {$_.IdentityReference -like "*SYSTEM*"} | Select-Object -First 1 | ForEach-Object {"OK"} else {"REVISION REQUERIDA"})
-Data: $((Get-Acl (Join-Path $InstallPath "Data")).Access | Where-Object {$_.IdentityReference -like "*SYSTEM*"} | Select-Object -First 1 | ForEach-Object {"OK"} else {"REVISION REQUERIDA"})
+Logs: $(if((Get-Acl (Join-Path $InstallPath "Logs")).Access | Where-Object {$_.IdentityReference -like "*SYSTEM*"}) {'OK'} else {'REVISION REQUERIDA'})
+Data: $(if((Get-Acl (Join-Path $InstallPath "Data")).Access | Where-Object {$_.IdentityReference -like "*SYSTEM*"}) {'OK'} else {'REVISION REQUERIDA'})
 
 URL DE ACCESO:
 http://localhost:$ServicePort/swagger

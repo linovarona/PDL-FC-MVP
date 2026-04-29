@@ -1,58 +1,58 @@
-﻿using System.Data;
+﻿// src/FichaCosto.Service/Data/DatabaseInitializer.cs
 using Dapper;
+using FichaCosto.Repositories.Interfaces;
 using Microsoft.Data.Sqlite;
+using System.Data;
 
 namespace FichaCosto.Service.Data;
 
-/// <summary>
-/// Inicializador de base de datos SQLite con Dapper
-/// </summary>
 public class DatabaseInitializer
 {
-    private readonly string _connectionString;
+    private readonly IConnectionFactory _connectionFactory;
     private readonly ILogger<DatabaseInitializer> _logger;
+    private readonly IHostEnvironment _environment;
+    private readonly string _basePath;
     private readonly string _schemaPath;
 
-    public DatabaseInitializer(IConfiguration configuration, ILogger<DatabaseInitializer> logger)
+    public DatabaseInitializer(
+        IConnectionFactory connectionFactory,
+        ILogger<DatabaseInitializer> logger,
+        IHostEnvironment environment)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Data Source=./Data/fichacosto.db";
+        _connectionFactory = connectionFactory;
         _logger = logger;
+        _environment = environment;
 
-        // Resolver ruta del schema SQL
-        var baseDir = AppContext.BaseDirectory;
-        _schemaPath = Path.Combine(baseDir, "Data", "Schema.sql");
+        // Siempre usar ProgramData para archivos de datos (Schema.sql, SeedData.sql)
+        _basePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "FichaCostoService");
 
-        // Si no existe en binario, buscar en proyecto (modo desarrollo)
+        _schemaPath = Path.Combine(_basePath, "Data", "Schema.sql");
+
         if (!File.Exists(_schemaPath))
         {
-            _schemaPath = Path.Combine(baseDir, "..", "..", "..", "Data", "Schema.sql");
+            // Fallback para desarrollo (cuando se ejecuta desde el directorio del proyecto)
+            var devPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "src", "FichaCosto.Service", "Data", "Schema.sql");
+            if (File.Exists(devPath)) _schemaPath = devPath;
         }
     }
 
-    /// <summary>
-    /// Inicializa la base de datos: crea archivo, ejecuta schema y seed data
-    /// </summary>
     public async Task InitializeAsync()
     {
         try
         {
-            _logger.LogInformation("Inicializando base de datos SQLite...");
+            _logger.LogInformation("Inicializando base de datos SQLite [Environment: {Environment}]...",
+                _environment.EnvironmentName);
 
-            // 1. Asegurar que existe el directorio
-            var dbPath = ExtractDataSource(_connectionString);
-            var directory = Path.GetDirectoryName(dbPath);
+            // Crear directorio de datos
+            await EnsureDataDirectoryAsync();
 
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-                _logger.LogInformation("Directorio de datos creado: {Directory}", directory);
-            }
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
 
-            // 2. Verificar si la BD ya existe y tiene tablas
-            using var connection = new SqliteConnection(_connectionString);
-            await connection.OpenAsync();
-
+            // Verificar si ya existe schema
             var tableCount = await connection.ExecuteScalarAsync<int>(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
             );
@@ -63,13 +63,10 @@ public class DatabaseInitializer
                 return;
             }
 
-            // 3. Ejecutar schema SQL
+            // SOLO crear schema, SIN datos de seed
             await ExecuteSchemaAsync(connection);
 
-            // 4. Insertar datos de prueba (seed)
-            await SeedDataAsync(connection);
-
-            _logger.LogInformation("Base de datos inicializada correctamente");
+            _logger.LogInformation("Schema creado exitosamente. BD lista para seed de datos.");
         }
         catch (Exception ex)
         {
@@ -78,20 +75,56 @@ public class DatabaseInitializer
         }
     }
 
-    /// <summary>
-    /// Ejecuta el script Schema.sql
-    /// </summary>
-    private async Task ExecuteSchemaAsync(SqliteConnection connection)
+    private async Task EnsureDataDirectoryAsync()
     {
-        if (!File.Exists(_schemaPath))
+        try
         {
-            throw new FileNotFoundException($"No se encontró el archivo de esquema: {_schemaPath}");
+            var dbPath = GetDatabasePath();
+            if (string.IsNullOrEmpty(dbPath) || dbPath == ":memory:") return;
+
+            var directory = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+                _logger.LogInformation("Directorio de datos creado: {Directory}", directory);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "No se pudo crear directorio de datos");
+        }
+    }
+
+    private async Task ExecuteSchemaAsync(IDbConnection connection)
+    {
+        var schemaPath = ResolveSchemaPath();
+
+        if (!File.Exists(schemaPath))
+        {
+            _logger.LogError("Schema.sql no encontrado en: {Path}", schemaPath);
+            throw new FileNotFoundException("Schema.sql no encontrado", schemaPath);
         }
 
-        var sql = await File.ReadAllTextAsync(_schemaPath);
+        var sql = await File.ReadAllTextAsync(schemaPath);
 
-        // Dividir por sentencias (simplificado para SQLite)
-        var commands = sql.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries)
+        if (connection.State != ConnectionState.Open)
+            connection.Open();
+
+        await ExecuteSqlBatchedAsync(connection, sql);
+        _logger.LogInformation("Schema SQL ejecutado: {Path}", schemaPath);
+    }
+
+    private async Task ExecuteSqlBatchedAsync(IDbConnection connection, string sql)
+    {
+        // Limpiar comentarios
+        var lines = sql.Split('\n')
+            .Where(line => !line.TrimStart().StartsWith("--"))
+            .Select(line => line.Split("--")[0]);
+
+        var cleanSql = string.Join("\n", lines);
+
+        var commands = cleanSql.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(cmd => cmd.Trim())
             .Where(cmd => !string.IsNullOrWhiteSpace(cmd))
             .ToList();
 
@@ -100,17 +133,15 @@ public class DatabaseInitializer
         {
             foreach (var command in commands)
             {
-                var trimmed = command.Trim();
-                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("--"))
+                if (command.Trim().StartsWith("PRAGMA", StringComparison.OrdinalIgnoreCase))
+                {
+                    try { await connection.ExecuteAsync(command, transaction: transaction); }
+                    catch { /* ignorar PRAGMAs que fallen */ }
                     continue;
-
-                await connection.ExecuteAsync(trimmed, transaction: transaction);
-                _logger.LogDebug("Ejecutado: {CommandPreview}",
-                    trimmed.Length > 50 ? trimmed[..50] + "..." : trimmed);
+                }
+                await connection.ExecuteAsync(command, transaction: transaction);
             }
-
             transaction.Commit();
-            _logger.LogInformation("Schema SQL ejecutado: {Count} comandos", commands.Count);
         }
         catch
         {
@@ -119,61 +150,61 @@ public class DatabaseInitializer
         }
     }
 
-    /// <summary>
-    /// Inserta datos de prueba iniciales
-    /// </summary>
-    private async Task SeedDataAsync(SqliteConnection connection)
+    private string ResolveSchemaPath()
     {
-        _logger.LogInformation("Insertando datos de prueba...");
+        // _basePath ya apunta a ProgramData\FichaCostoService
+        var paths = new[]
+        {
+            Path.Combine(_basePath, "Data", "Schema.sql"),
+            Path.Combine(AppContext.BaseDirectory, "Data", "Schema.sql"), // Fallback desarrollo
+            Path.Combine(Directory.GetCurrentDirectory(), "Data", "Schema.sql") // Fallback alternativo
+        };
 
-        // Cliente de ejemplo
-        var clienteId = await connection.ExecuteScalarAsync<int>(@"
-            INSERT INTO Clientes (NombreEmpresa, CUIT, Direccion, ContactoNombre, ContactoEmail)
-            VALUES ('PyME Ejemplo S.A.', '30123456789', 'Av. Siempre Viva 123', 'Juan Pérez', 'juan@pyme.com');
-            SELECT last_insert_rowid();"
-        );
+        foreach (var path in paths)
+        {
+            if (File.Exists(path)) return path;
+        }
 
-        // Producto de ejemplo
-        var productoId = await connection.ExecuteScalarAsync<int>(@"
-            INSERT INTO Productos (ClienteId, Codigo, Nombre, Descripcion, UnidadMedida)
-            VALUES (@ClienteId, 'PROD-001', 'Producto de Prueba', 'Descripción del producto MVP', 5);
-            SELECT last_insert_rowid();",
-            new { ClienteId = clienteId }
-        );
-
-        // Materias primas de ejemplo
-        await connection.ExecuteAsync(@"
-            INSERT INTO MateriasPrimas (ProductoId, Nombre, Cantidad, CostoUnitario, Orden)
-            VALUES 
-                (@ProductoId, 'Materia Prima A', 10, 15.50, 1),
-                (@ProductoId, 'Materia Prima B', 5, 25.00, 2);",
-            new { ProductoId = productoId }
-        );
-
-        // Mano de obra de ejemplo
-        await connection.ExecuteAsync(@"
-            INSERT INTO ManoObraDirecta (ProductoId, Horas, SalarioHora, PorcentajeCargasSociales, DescripcionTarea)
-            VALUES (@ProductoId, 2.5, 850.00, 35.5, 'Ensamblaje manual');",
-            new { ProductoId = productoId }
-        );
-
-        _logger.LogInformation("Datos de prueba insertados: Cliente {ClienteId}, Producto {ProductoId}",
-            clienteId, productoId);
+        _logger.LogError("Schema.sql no encontrado. Rutas buscadas: {Paths}", paths);
+        return paths[0];
     }
 
-    /// <summary>
-    /// Extrae la ruta del Data Source de la connection string
-    /// </summary>
-    private static string ExtractDataSource(string connectionString)
+    private string GetDatabasePath()
     {
-        var parts = connectionString.Split(';');
-        foreach (var part in parts)
+        try
         {
-            if (part.Trim().StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase))
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection is SqliteConnection sqliteConn)
             {
-                return part.Substring("Data Source=".Length).Trim();
+                var connStr = sqliteConn.ConnectionString;
+                var dataSource = ExtractDataSource(connStr);
+
+                if (!string.IsNullOrEmpty(dataSource) && !Path.IsPathRooted(dataSource))
+                {
+                    dataSource = Path.Combine(_basePath, dataSource.TrimStart('.', '\\', '/'));
+                }
+                return dataSource;
             }
         }
-        return "fichacosto.db"; // default
+        catch { }
+        return null;
+    }
+
+    private static string ExtractDataSource(string connectionString)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return null;
+
+        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var part in parts)
+        {
+            var trimmed = part.Trim();
+            if (trimmed.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.StartsWith("DataSource=", StringComparison.OrdinalIgnoreCase))
+            {
+                var idx = trimmed.IndexOf('=');
+                if (idx > 0) return trimmed.Substring(idx + 1).Trim();
+            }
+        }
+        return null;
     }
 }

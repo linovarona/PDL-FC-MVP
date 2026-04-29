@@ -39,3 +39,4 @@ src/FichaCosto.Installer/install.ps1
 src/FichaCosto.Installer/post-install.ps1
 src/FichaCosto.Installer/post-install.ps1
 src/FichaCosto.Installer/install.ps1
+/offline-installer

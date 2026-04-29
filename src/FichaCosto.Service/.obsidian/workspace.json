@@ -1,0 +1,228 @@
+{
+  "main": {
+    "id": "3c604f15ae2301d8",
+    "type": "split",
+    "children": [
+      {
+        "id": "0608ea672d9b72dd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "529e70bbb6f5a1c3",
+            "type": "leaf",
+            "state": {
+              "type": "bases",
+              "state": {
+                "file": "Sin título 2.base",
+                "viewName": "Tabla"
+              },
+              "icon": "lucide-table",
+              "title": "Sin título 2"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d1bf12f113483aef",
+    "type": "split",
+    "children": [
+      {
+        "id": "aec23725530eed4d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "59a9bb8f9c9ad1e7",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de archivos"
+            }
+          },
+          {
+            "id": "ed8bb4c0d659582d",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Buscar"
+            }
+          },
+          {
+            "id": "d61b45cd2e781b03",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "fef58b5f97b0511d",
+    "type": "split",
+    "children": [
+      {
+        "id": "b465c19fb0bbafdc",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f49a1c4b3ad8a452",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Sin título 2.base",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Enlaces entrantes de Sin título 2"
+            }
+          },
+          {
+            "id": "8ebc8420acfab8d2",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Sin título 2.base",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Enlaces salientes de Sin título 2"
+            }
+          },
+          {
+            "id": "8977523f06d984a5",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "bc273f2715057521",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas las propiedades"
+            }
+          },
+          {
+            "id": "013217d5b70b8bf3",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Sin título 2.base",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Esquema de Sin título 2"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
+    }
+  },
+  "floating": {
+    "id": "10ad39f3c80f5a9d",
+    "type": "floating",
+    "children": [
+      {
+        "id": "0b03a17e3c948f66",
+        "type": "window",
+        "children": [
+          {
+            "id": "b8680f5598aa1ac6",
+            "type": "tabs",
+            "children": [
+              {
+                "id": "844de9a656b599b9",
+                "type": "leaf",
+                "state": {
+                  "type": "empty",
+                  "state": {},
+                  "icon": "lucide-file",
+                  "title": "Nueva pestaña"
+                }
+              }
+            ]
+          }
+        ],
+        "direction": "vertical",
+        "x": -920,
+        "y": 208,
+        "width": 680,
+        "height": 687,
+        "maximize": false,
+        "zoom": 0
+      }
+    ]
+  },
+  "active": "529e70bbb6f5a1c3",
+  "lastOpenFiles": [
+    "obj/876c8b02-9759-42fc-863e-2c27533a60c4.tmp",
+    "Sin título 1.base",
+    "Sin título.base",
+    "Sin título 2.base",
+    "Sin título.md"
+  ]
+}
